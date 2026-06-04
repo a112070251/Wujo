@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <%- include('section/head') %>
+    <title>評價夥伴 - Wu Jo</title>
+    <style>
+        /* ==========================================
+           全純 CSS 控制，完全不依賴任何 Tailwind
+           ========================================== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: #FAFAFA !important; /* Wu Jo 清爽白底 */
+            color: #333333 !important;
+            /* ❌ 這裡已經完全拔除 padding-top，消滅多餘空隙！ */
+            padding-bottom: 140px; /* 留出底部導覽列空間 */
+        }
+
+        /* 核心修正：強制置中與寬度限制 */
+        .main-container {
+            width: 100% !important;
+            max-width: 440px !important; /* 黃金手機寬度 */
+            margin: 0 auto !important;
+            padding: 24px 20px 20px 20px; /* 調整上方間距，緊貼導覽列 */
+            display: block;
+        }
+
+        .page-title {
+            font-size: 22px;
+            font-weight: 900;
+            color: #111111;
+            text-align: center;
+            margin-bottom: 24px;
+            line-height: 1.4;
+        }
+
+        /* 被評價舞者卡片區塊 */
+        .target-user-card {
+            background-color: #FFFFFF;
+            padding: 24px;
+            border-radius: 28px;
+            border: 1px solid #EFEFEF;
+            text-align: center;
+            margin-bottom: 32px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.01);
+        }
+
+        .avatar-border {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            padding: 3px;
+            background: linear-gradient(135deg, #B37A48 0%, #823A00 100%);
+            margin: 0 auto 12px auto;
+            overflow: hidden;
+        }
+
+        .target-avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #FFFFFF;
+            background-color: #FAFAFA;
+        }
+
+        .target-name {
+            font-size: 18px;
+            font-weight: 800;
+            color: #222222;
+            margin-bottom: 4px;
+        }
+
+        .target-dance {
+            font-size: 12px;
+            color: #B37A48;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        /* 表單排版 */
+        .form-section {
+            margin-bottom: 28px;
+        }
+
+        .section-label {
+            display: block;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 700;
+            color: #888888;
+            margin-bottom: 12px;
+        }
+
+        /* 星星評分樣式 */
+        .star-rating {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            font-size: 32px;
+        }
+
+        .star-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #EFEFEF; /* 預設灰星星 */
+            transition: transform 0.1s;
+        }
+        
+        .star-btn.active {
+            color: #FFB300; /* 亮黃色星星 */
+        }
+        
+        .star-btn:active {
+            transform: scale(0.9);
+        }
+
+        /* 優點標籤選擇器 */
+        .tag-pool {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .feature-tag-btn {
+            background-color: #FFFFFF;
+            border: 1px solid #EFEFEF;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #666666;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        /* 點選標籤後的 Wu Jo 焦糖金棕反白效果 */
+        .feature-tag-btn.selected {
+            background-color: #F5EFEA;
+            border-color: #B37A48;
+            color: #823A00;
+        }
+
+        /* 提交按鈕 */
+        .submit-btn {
+            width: 100%;
+            height: 52px;
+            border-radius: 26px;
+            border: none;
+            background: linear-gradient(135deg, #B37A48 0%, #823A00 100%);
+            color: #FFFFFF;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(130, 58, 0, 0.2);
+            transition: all 0.2s ease;
+            margin-top: 12px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 28px rgba(130, 58, 0, 0.25);
+        }
+
+        .submit-btn:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+    <% 
+      if (typeof targetUser === 'undefined') {
+          var targetUser = { name: '神秘舞者', avatar: 'defaultPartner', danceType: 'K-POP / URBAN' };
+      }
+    %>
+
+    <%- include('section/nav') %>
+
+    <div style="width: 100%; display: flex; justify-content: center;">
+        <main class="main-container">
+            <h2 class="page-title">練舞結束！<br>給隊友個評價吧</h2>
+            
+            <div class="target-user-card">
+                <div class="avatar-border">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= targetUser.avatar %>" class="target-avatar" alt="avatar">
+                </div>
+                <h3 class="target-name"><%= targetUser.name %></h3>
+                <p class="target-dance"><%= targetUser.danceType %></p>
+            </div>
+
+            <form action="/submit-review" method="POST">
+                
+                <div class="form-section">
+                    <label class="section-label">整體合作愉快嗎？</label>
+                    <div class="star-rating">
+                        <button type="button" class="star-btn active" data-value="1">★</button>
+                        <button type="button" class="star-btn active" data-value="2">★</button>
+                        <button type="button" class="star-btn active" data-value="3">★</button>
+                        <button type="button" class="star-btn active" data-value="4">★</button>
+                        <button type="button" class="star-btn" data-value="5">★</button>
+                    </div>
+                    <input type="hidden" name="rating" id="ratingScore" value="4">
+                </div>
+
+                <div class="form-section" style="margin-top: 40px; margin-bottom: 40px;">
+                    <label class="section-label">這名舞者的優點？</label>
+                    <div class="tag-pool">
+                        <button type="button" class="feature-tag-btn">#超級準時</button>
+                        <button type="button" class="feature-tag-btn">#實力強大</button>
+                        <button type="button" class="feature-tag-btn selected">#態度親切</button>
+                        <button type="button" class="feature-tag-btn">#溝通順暢</button>
+                    </div>
+                    <input type="hidden" name="tags" id="selectedTags" value="#態度親切">
+                </div>
+
+                <button type="submit" class="submit-btn">提交評價</button>
+            </form>
+        </main>
+    </div>
+
+    <script>
+        const stars = document.querySelectorAll('.star-btn');
+        const ratingInput = document.getElementById('ratingScore');
+
+        stars.forEach((star, index) => {
+            star.addEventListener('click', () => {
+                ratingInput.value = index + 1;
+                stars.forEach((s, i) => {
+                    if (i <= index) {
+                        s.classList.add('active');
+                    } else {
+                        s.classList.remove('active');
+                    }
+                });
+            });
+        });
+
+        const tags = document.querySelectorAll('.feature-tag-btn');
+        const tagsInput = document.getElementById('selectedTags');
+
+        tags.forEach(tag => {
+            tag.addEventListener('click', () => {
+                tag.classList.toggle('selected');
+                const selected = Array.from(document.querySelectorAll('.feature-tag-btn.selected'))
+                                      .map(t => t.textContent);
+                tagsInput.value = selected.join(',');
+            });
+        });
+    </script>
+</body>
+</html>

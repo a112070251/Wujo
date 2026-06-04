@@ -1,0 +1,24 @@
+<div class="bg-[#1A1A2E] p-5 rounded-3xl border border-white/5 hover:border-pink-500/50 transition">
+    <div class="flex items-center gap-4">
+        <img src="/img/<%= user.img %>" class="w-16 h-16 rounded-2xl object-cover border-2 border-pink-500" alt="頭像">
+        
+        <div class="flex-1">
+            <div class="flex items-center gap-2">
+                <h4 class="font-bold text-lg"><%= user.name %></h4>
+                <span class="text-[10px] bg-yellow-500/10 text-yellow-500 border border-yellow-500/30 px-2 py-0.5 rounded-full">
+                    ★ <%= user.score %>
+                </span>
+            </div>
+            
+            <div class="flex flex-wrap gap-2 mt-2">
+                <% user.tags.forEach(tag => { %>
+                    <span class="text-[10px] bg-purple-500/20 text-purple-400 px-2 py-1 rounded-md">#<%= tag %></span>
+                <% }) %>
+            </div>
+        </div>
+    </div>
+    <p class="text-gray-400 text-sm mt-4 leading-relaxed line-clamp-2">
+        <%= user.desc %>
+    </p>
+<a href="/chat" class="block w-full text-center bg-white/5 py-2 rounded-xl text-xs hover:bg-pink-600 transition">私訊聊聊</a>
+</div>

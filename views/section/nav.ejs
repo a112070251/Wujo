@@ -1,0 +1,140 @@
+<style>
+    /* 頂部 Header 容器 */
+    .site-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 24px;
+        background-color: #FFFFFF;
+        border-bottom: 1px solid #EFEFEF;
+        max-width: 100%;
+        margin: 0 auto;
+    }
+
+    /* 左上角系統名稱 Wu Jo (#823A00) */
+    .brand-logo-top {
+        color: #823A00 !important;
+        font-size: 24px;
+        font-weight: 900;
+        text-decoration: none;
+        letter-spacing: -0.5px;
+        display: inline-block;
+    }
+
+    /* 頂部登入按鈕 (#CC8C53) */
+    .btn-login-top {
+        background-color: #CC8C53;
+        color: #FFFFFF !important;
+        padding: 8px 18px;
+        border-radius: 20px;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: bold;
+        transition: opacity 0.2s;
+    }
+    
+    .btn-login-top:hover {
+        opacity: 0.9;
+    }
+
+    /* 頂部登出按鈕 (淺色溫柔感) */
+    .btn-logout-top {
+        color: #888888 !important;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+        padding: 8px 12px;
+    }
+    .btn-logout-top:hover {
+        text-decoration: underline;
+    }
+
+    /* 歡迎文字 */
+    .welcome-text {
+        font-size: 14px;
+        color: #555555;
+        font-weight: 500;
+    }
+
+    /* 底部固定導覽列 */
+    .bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 66px;
+        background-color: #EFEFEF;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        border-top: 1px solid #DDDDDD;
+        z-index: 9999;
+    }
+
+    /* 底部選單項目項目 */
+    .nav-item-box {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-decoration: none;
+        font-size: 11px;
+        font-weight: 500;
+        gap: 2px;
+    }
+
+    /* 自己不在的選單：#B37A48 */
+    .nav-item-box.inactive {
+        color: #B37A48;
+    }
+
+    /* 自己所在的畫面：#653600 */
+    .nav-item-box.active {
+        color: #653600;
+        font-weight: bold;
+    }
+
+    .nav-icon-img {
+        font-size: 20px;
+        line-height: 1;
+    }
+</style>
+
+<header class="site-header">
+    <a href="/" class="brand-logo-top">Wu Jo</a>
+    
+    <div>
+        <% if (locals.user && user) { %>
+            <a href="/logout" class="btn-logout-top">登出</a>
+        <% } else { %>
+            <a href="/login" class="btn-login-top">登入</a>
+        <% } %>
+    </div>
+</header>
+
+<nav class="bottom-nav">
+    <a href="/partner" class="nav-item-box inactive">
+        <span class="nav-icon-img">👯</span>
+        <span>找舞伴</span>
+    </a>
+    <a href="/messages" class="nav-item-box inactive">
+        <span class="nav-icon-img">💬</span>
+        <span>訊息</span>
+    </a>
+    <a href="/blacklist" class="nav-item-box inactive">
+        <span class="nav-icon-img">🚫</span>
+        <span>黑名單</span>
+    </a>
+    <a href="/venues" class="nav-item-box inactive">
+        <span class="nav-icon-img">📍</span>
+        <span>找教室</span>
+    </a>
+    <a href="/photographers" class="nav-item-box inactive">
+        <span class="nav-icon-img">📷</span>
+        <span>找攝影</span>
+    </a>
+    
+    <a href="/me" class="nav-item-box inactive">
+        <span class="nav-icon-img">👤</span>
+        <span>我的</span>
+    </a>
+</nav>

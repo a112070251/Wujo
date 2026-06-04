@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <%- include('section/head') %>
+    <title>尋找專業攝影 - Wu Jo</title>
+    <style>
+        /* ==========================================
+           全純 CSS 控制，完全不依賴任何 Tailwind
+           ========================================== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: #FAFAFA !important; /* Wu Jo 清爽白底 */
+            color: #333333 !important;
+            padding-bottom: 120px;
+        }
+
+        .main-container {
+            max-width: 480px; /* 統一與其他頁面相同的黃金手機寬度 */
+            margin: 0 auto;
+            padding: 80px 20px 20px 20px;
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 900;
+            color: #111111;
+            margin-bottom: 20px;
+            padding-left: 4px;
+        }
+
+        /* 搜尋框區塊 */
+        .search-wrapper {
+            margin-bottom: 24px;
+        }
+
+        .search-input {
+            width: 100%;
+            height: 46px;
+            border-radius: 23px;
+            border: 1px solid #EFEFEF;
+            background-color: #FFFFFF;
+            padding: 0 20px;
+            font-size: 14px;
+            outline: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.01);
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            border-color: #B37A48; /* 聚焦時轉為焦糖金棕 */
+            box-shadow: 0 4px 12px rgba(179, 122, 72, 0.08);
+        }
+
+        /* 攝影師列表容器 */
+        .photographer-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* 攝影師卡片 */
+        .photographer-card {
+            background-color: #FFFFFF;
+            border-radius: 28px;
+            padding: 20px;
+            border: 1px solid #EFEFEF;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.01);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .photographer-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(179, 122, 72, 0.2);
+        }
+
+        .photographer-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        /* 攝影師頭貼外環（同步 Wu Jo 質感漸層） */
+        .avatar-border {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            padding: 3px;
+            background: linear-gradient(135deg, #B37A48 0%, #823A00 100%);
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .photographer-avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #FFFFFF; /* 標準 solid，絕不報錯 */
+            background-color: #FAFAFA;
+        }
+
+        /* 詳細文字區 */
+        .photographer-detail h3 {
+            font-size: 16px;
+            font-weight: 800;
+            color: #222222;
+            margin-bottom: 4px;
+        }
+
+        .photographer-tag {
+            font-size: 11px;
+            font-weight: 700;
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 6px;
+            background-color: #F5EFEA;
+            color: #B37A48;
+            margin-bottom: 6px;
+        }
+
+        .photographer-meta {
+            font-size: 12px;
+            color: #777777;
+            font-weight: 500;
+        }
+
+        /* 💬 圓形聊天按鈕 */
+        .btn-chat-circle {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background-color: #823A00; /* Wu Jo 深焦糖棕 */
+            color: #FFFFFF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            font-size: 16px;
+            box-shadow: 0 4px 12px rgba(130, 58, 0, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        .btn-chat-circle:hover {
+            background-color: #632C00;
+            transform: scale(1.05);
+        }
+
+        .btn-chat-circle:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+
+    <%- include('section/nav') %>
+
+    <main class="main-container">
+        <h1 class="page-title">尋找專業攝影</h1>
+
+        <div class="search-wrapper">
+            <input type="text" class="search-input" placeholder="搜尋攝影風格、地點...">
+        </div>
+
+        <div class="photographer-list">
+            
+            <div class="photographer-card">
+                <div class="photographer-info">
+                    <div class="avatar-border">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Ming" class="photographer-avatar" alt="頭貼">
+                    </div>
+                    <div class="photographer-detail">
+                        <h3>小明</h3>
+                        <p class="photographer-tag">街舞動態攝影</p>
+                        <p class="photographer-meta">📍 台北 ｜ 💰 1500/hr</p>
+                    </div>
+                </div>
+                <a href="/chat/小明" class="btn-chat-circle" title="開始對話">💬</a>
+            </div>
+
+            <div class="photographer-card">
+                <div class="photographer-info">
+                    <div class="avatar-border">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Hua" class="photographer-avatar" alt="頭貼">
+                    </div>
+                    <div class="photographer-detail">
+                        <h3>阿華</h3>
+                        <p class="photographer-tag">舞台劇照</p>
+                        <p class="photographer-meta">📍 台中 ｜ 💰 2000/hr</p>
+                    </div>
+                </div>
+                <a href="/chat/阿華" class="btn-chat-circle" title="開始對話">💬</a>
+            </div>
+
+        </div>
+    </main>
+
+</body>
+</html>

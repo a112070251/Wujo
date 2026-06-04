@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <%- include('section/head') %>
+    <title>我的訊息 - Wu Jo</title>
+    <style>
+        /* ==========================================
+           全純 CSS 控制，完全不依賴任何 Tailwind
+           ========================================== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: #FAFAFA !important; /* Wu Jo 清爽白底 */
+            color: #333333 !important;
+            padding-bottom: 120px;
+        }
+
+        .main-container {
+            max-width: 480px; /* 統一與個人檔案相同的黃金手機寬度 */
+            margin: 0 auto;
+            padding: 80px 20px 20px 20px;
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 900;
+            color: #111111;
+            margin-bottom: 24px;
+            padding-left: 4px;
+        }
+
+        /* 聊天列表容器 */
+        .chat-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* 單個對話卡片 */
+        .chat-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            border-radius: 24px;
+            background-color: #FFFFFF;
+            border: 1px solid #EFEFEF;
+            text-decoration: none;
+            color: inherit;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.01);
+            transition: all 0.2s ease;
+        }
+
+        .chat-item:hover {
+            border-color: rgba(179, 122, 72, 0.3); /* 輕微焦糖色外框 hover */
+            transform: translateY(-1px);
+        }
+
+        .chat-item:active {
+            transform: scale(0.98);
+        }
+
+        /* 頭貼外環（同步 Wu Jo 質感漸層） */
+        .avatar-container {
+            position: relative;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+
+        .chat-avatar-border {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            padding: 3px;
+            background: linear-gradient(135deg, #B37A48 0%, #823A00 100%);
+            box-shadow: 0 4px 12px rgba(130, 58, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .chat-avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #FFFFFF; /* 標準 solid，絕對不報錯 */
+            background-color: #FAFAFA;
+        }
+
+        /* 線上狀態綠點 */
+        .status-dot {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 12px;
+            height: 12px;
+            background-color: #4CAF50; /* 健康綠 */
+            border: 2px solid #FFFFFF;
+            border-radius: 50%;
+        }
+
+        /* 文字內容區 */
+        .chat-info {
+            flex-1: 1;
+            min-width: 0; /* 防止長文字撐破卡片 */
+        }
+
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .chat-name {
+            font-size: 15px;
+            font-weight: 800;
+            color: #222222;
+        }
+
+        .chat-time {
+            font-size: 11px;
+            color: #A0A0A0;
+        }
+
+        .chat-preview {
+            font-size: 13px;
+            color: #777777;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis; /* 超出長度自動變 ... */
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <%- include('section/nav') %>
+
+    <main class="main-container">
+        <h2 class="page-title">私訊對話</h2>
+        
+        <div class="chat-list">
+            <% chatList.forEach(chat => { %>
+                <a href="/chat/<%= chat.id %>" class="chat-item">
+                    
+                    <div class="avatar-container">
+                        <div class="chat-avatar-border">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= chat.avatar %>" class="chat-avatar" alt="avatar">
+                        </div>
+                        <span class="status-dot"></span>
+                    </div>
+                    
+                    <div class="chat-info" style="flex: 1;">
+                        <div class="chat-header">
+                            <h4 class="chat-name"><%= chat.name %></h4>
+                            <span class="chat-time"><%= chat.time %></span>
+                        </div>
+                        <p class="chat-preview">
+                            <%= chat.lastMsg %>
+                        </p>
+                    </div>
+
+                </a>
+            <% }) %>
+        </div>
+    </main>
+
+</body>
+</html>

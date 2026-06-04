@@ -1,0 +1,310 @@
+/* public/css/style.css */
+
+:root {
+    /* 字體字型統一設定 */
+    --font-main: "Noto Sans TC", "PingFang TC", system-ui, sans-serif;
+
+    /* 黃金大地色票 */
+    --color-brand: #823A00;          /* 1. 左上角系統名稱 Wu Jo */
+    --color-nav-active: #653600;     /* 2. 自己所在的畫面選單 */
+    --color-nav-inactive: #B37A48;   /* 3. 自己不在的選單 */
+    --color-accent: #CC8C53;         /* 4. 強調色 / 功能按鈕 */
+    
+    /* 區塊與底色 */
+    --color-bg-main: #FFFFFF;        /* 全網頁底色：純白 */
+    --color-bg-card: #EFEFEF;        /* 訊息底色、卡片與功能類區塊 */
+    --color-text-main: #000000;      /* 文字顏色：純黑 */
+    --color-text-muted: #666666;     /* 輔助文字：深灰 */
+}
+
+/* 全域基礎重設 */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-main);
+}
+
+body {
+    background-color: var(--color-bg-main);
+    color: var(--color-text-main);
+    padding-bottom: 90px; /* 預留手機底部選單空間 */
+}
+
+/* 頂部 Header 區塊 */
+.site-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background-color: var(--color-bg-main);
+}
+
+.brand-logo {
+    color: var(--color-brand);
+    font-size: 26px;
+    font-weight: 900;
+    text-decoration: none;
+    letter-spacing: -1px;
+}
+
+/* 底部固定導覽列（手機版專用） */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 70px;
+    background-color: var(--color-bg-card); /* 基礎功能底色 #EFEFEF */
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    border-top: 1px solid rgba(0,0,0,0.05);
+    z-index: 999;
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-nav-inactive); /* #B37A48 */
+    gap: 4px;
+}
+
+.nav-item.active {
+    color: var(--color-nav-active); /* #653600 */
+    font-weight: bold;
+}
+
+.nav-icon {
+    font-size: 20px;
+}
+
+/* 主內容容器（手機版預設） */
+.container {
+    max-width: 600px; /* 手機版限制寬度 */
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.page-title {
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--color-text-main); /* #000000 */
+    margin-bottom: 20px;
+}
+
+/* 搜尋框區塊 */
+.search-wrapper {
+    background-color: var(--color-bg-card); /* #EFEFEF */
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.search-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 16px;
+    color: var(--color-text-main);
+}
+
+/* 列表卡片（舞伴/攝影師通用樣式） */
+.photographer-card {
+    background-color: var(--color-bg-card); /* 訊息/卡片底色 #EFEFEF */
+    border-radius: 20px;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.photographer-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.photographer-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background-color: #DDDDDD;
+}
+
+.photographer-detail h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.photographer-tag {
+    font-size: 14px;
+    color: var(--color-brand); /* #823A00 */
+    margin-bottom: 4px;
+}
+
+.photographer-meta {
+    font-size: 13px;
+    color: var(--color-text-muted);
+}
+
+/* 功能按鈕（如：私訊小按鈕、評價） */
+.btn-chat-circle {
+    background-color: var(--color-accent); /* #CC8C53 */
+    color: #FFFFFF;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-decoration: none;
+    font-size: 18px;
+}
+
+/* ==========================================
+   活動 Banner 卡片專屬樣式
+   ========================================== */
+.new-promo-banner {
+    background-color: var(--color-bg-card, #EFEFEF); /* 底色#EFEFEF */
+    border-radius: 20px; /* 統一採用 20px 圓角 */
+    overflow: hidden;
+    position: relative;
+    max-width: 550px;
+    margin: 0 auto 40px auto; /* 居中並增加下方間距 */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); /* 增加輕微陰影提升立體感 */
+    display: block;
+    text-decoration: none;
+    color: var(--color-text-main, #000000); /* 文字顏色#000000 */
+    transition: transform 0.2s ease; /* 增加滑鼠經過互動 */
+}
+
+.new-promo-banner:hover {
+    transform: translateY(-2px); /* 滑鼠經過時微幅上移 */
+}
+
+/* 1. 圖像容器：優化長寬比 */
+.banner-image-container {
+    width: 100%;
+    height: 180px; /* 調整高度，優化字圖比例 */
+    overflow: hidden;
+}
+
+.banner-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* 確保圖片不變形填滿容器 */
+}
+
+/* 2. 文字內容區域：增加內距 */
+.banner-content {
+    padding: 16px 20px; /* 調整內距，讓字圖更有呼吸感 */
+}
+
+/* 頂部標籤與資訊列 */
+.banner-tag-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+/* Sponsored 標籤：統一品牌色票 */
+.badge-sponsored {
+    background-color: var(--color-brand, #823A00); /* 品牌色＃823A00 */
+    color: #FFFFFF;
+    font-size: 11px;
+    font-weight: 900; /* 使用 Heavy 字重 */
+    padding: 3px 10px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* 合作教室資訊文字 */
+.venue-name-text {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-nav-inactive, #B37A48); /* 自己不在選單的色票 */
+}
+
+/* 主標題：優化字體大小與行高 */
+.banner-title {
+    font-size: 18px; /* 縮小一點標題，優化比例 */
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--color-text-main, #000000);
+    margin-bottom: 2px;
+}
+
+/* 強調色修正：使用強調色票並加粗 */
+.highlight-discount {
+    color: var(--color-accent, #CC8C53); /* 強調色票＃CC8C53 */
+    font-size: 19px;
+    font-weight: 900; /* 使用 Heavy 字重 */
+}
+
+/* 副標題：優化資訊層級 */
+.banner-footer-text {
+    font-size: 12px;
+    color: var(--color-nav-inactive, #B37A48); /* 统一輔助文字顏色 */
+}
+
+
+/* ==========================================
+   響應式 RWD 設計：當螢幕寬度大於 768px（電腦/平板版）時自動切換
+   ========================================== */
+@media (min-width: 768px) {
+    
+    /* 1. 電腦版取消 body 底部留白，因為選單已經不在下面了 */
+    body {
+        padding-bottom: 0;
+    }
+
+    /* 2. 直接隱藏手機版專用的底部固定導覽列 */
+    .bottom-nav {
+        display: none; 
+    }
+
+    /* 3. 解鎖內容容器寬度：從手機 600px 放大至桌面 1100px */
+    .container {
+        max-width: 1100px;
+        padding: 40px 20px;
+    }
+
+    /* 4. 電腦版頂部 Header 樣式優化，增加下方細線 */
+    .site-header {
+        border-bottom: 1px solid rgba(0,0,0,0.06);
+        padding: 20px 40px;
+    }
+
+    /* 5. 列表排版升級：讓舞伴、攝影師卡片在電腦版變成「左右兩欄並排」 */
+    /* 這裡使用 CSS Grid 排版，它會自動尋找 container 內除了搜尋框和標題以外的卡片元素並排 */
+    .photographer-list-wrapper, 
+    .container > div:not(.search-wrapper):not(.page-title):not(.new-promo-banner) {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+        gap: 20px;
+    }
+
+    /* 清除電腦版卡片原本的下邊距，改由 Grid gap 統一控制 */
+    .photographer-card {
+        margin-bottom: 0;
+        width: 100%;
+    }
+
+    /* 6. 活動 Banner 在電腦版的寬度與置中優化 */
+    .new-promo-banner {
+        max-width: 650px;
+        margin: 0 auto 30px auto;
+    }
+}

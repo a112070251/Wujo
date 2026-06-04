@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <%- include('section/head') %>
+    <title><%= typeof venue !== 'undefined' && venue.name ? venue.name : '教室詳情' %> - Wu Jo</title>
+    <style>
+        /* ==========================================
+           教室詳情頁專屬純 CSS 樣式
+           ========================================== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #FFFFFF !important;
+            color: #000000 !important;
+            padding-bottom: 120px;
+        }
+
+        .detail-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 80px 16px 20px 16px;
+        }
+
+        /* 返回按鈕 */
+        .btn-back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #B37A48 !important;
+            text-decoration: none !important;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            transition: opacity 0.2s;
+        }
+
+        .btn-back-link:hover {
+            opacity: 0.8;
+        }
+
+        /* 詳情大卡片 */
+        .detail-card {
+            background: #FFFFFF;
+            border: 1px solid #EFEFEF;
+            border-radius: 28px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.03);
+        }
+
+        /* 頂部主圖控制區，嚴格控制高度，絕對不暴走 */
+        .detail-hero-box {
+            width: 100%;
+            height: 260px;
+            background-color: #EFEFEF;
+            overflow: hidden;
+        }
+
+        .detail-hero-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* 內容說明區 */
+        .detail-main-body {
+            padding: 24px;
+        }
+
+        .detail-title {
+            font-size: 24px;
+            font-weight: 900;
+            color: #333333;
+            margin-bottom: 8px;
+        }
+
+        .detail-price-tag {
+            display: inline-block;
+            font-size: 16px;
+            color: #823A00; /* 焦糖棕色 */
+            font-weight: 800;
+            margin-bottom: 20px;
+        }
+
+        /* 分隔虛線 */
+        .detail-divider {
+            border: none;
+            border-top: 1px dashed #EFEFEF;
+            margin: 16px 0;
+        }
+
+        /* 設備與資訊欄位 */
+        .info-section-title {
+            font-size: 15px;
+            font-weight: 800;
+            color: #653600;
+            margin-bottom: 10px;
+        }
+
+        .info-text {
+            font-size: 14px;
+            color: #555555;
+            line-height: 1.6;
+        }
+
+        /* 底部預約大按鈕 */
+        .btn-booking-submit {
+            width: 100%;
+            background-color: #823A00; 
+            color: #FFFFFF !important;
+            border: none;
+            padding: 16px 0;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 900;
+            cursor: pointer;
+            margin-top: 24px;
+            box-shadow: 0 6px 20px rgba(130, 58, 0, 0.15);
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .btn-booking-submit:hover {
+            background-color: #653600;
+        }
+
+        .btn-booking-submit:active {
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+    <%- include('section/nav') %>
+
+    <main class="detail-container">
+        
+        <a href="/venues" class="btn-back-link">
+            <span>←</span> 返回教室列表
+        </a>
+
+        <% if (typeof venue !== 'undefined' && venue) { %>
+            
+            <div class="detail-card">
+                <div class="detail-hero-box">
+                    <img src="<%= venue.image || '/img/venues1.jpg' %>" 
+                         onerror="this.src='/img/venues1.jpg'; this.onerror=null;"
+                         class="detail-hero-img" 
+                         alt="<%= venue.name %>">
+                </div>
+
+                <div class="detail-main-body">
+                    <h1 class="detail-title">📍 <%= venue.name %></h1>
+                    <span class="detail-price-tag">$ <%= venue.price %> NTD / 小時</span>
+                    
+                    <hr class="detail-divider">
+                    
+                    <div class="info-section">
+                        <h4 class="info-section-title">✨ 場地簡介與設備</h4>
+                        <p class="info-text">
+                            位於 <%= venue.dist || '市中心' %> 的專業舞蹈教室。空間寬敞、採光極佳，配備有全幅專業舞蹈落地鏡、環繞音響設備以及舒適的空調系統。適合街舞、MV舞蹈、現代舞練習或小型工作坊。
+                        </p>
+                    </div>
+
+                    <hr class="detail-divider">
+
+                    <div class="info-section">
+                        <h4 class="info-section-title">🕒 開放預訂時段</h4>
+                        <p class="info-text">每日早上 08:00 - 晚上 22:00（採整點預約制）</p>
+                    </div>
+
+                    <button onclick="alert('預約功能已送出，請等候教室確認通知！')" class="btn-booking-submit">
+                        立即預訂此場地
+                    </button>
+                </div>
+            </div>
+
+        <% } else { %>
+            <div style="text-align: center; padding: 60px 20px; color: #777;">
+                <p style="font-size: 48px; margin-bottom: 16px;">🔍</p>
+                <p style="font-size: 15px; font-weight: 700;">抱歉，找不到該教室的詳細資料。</p>
+                <p style="font-size: 13px; color: #999; margin-top: 4px;">請確認網址 ID 是否正確，或返回列表重新嘗試。</p>
+            </div>
+        <% } %>
+
+    </main>
+
+</body>
+</html>

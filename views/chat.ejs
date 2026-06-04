@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <%- include('section/head') %>
+    <title>對話中 - Wu Jo</title>
+    <style>
+        /* ==========================================
+           全純 CSS 控制，完全不依賴任何 Tailwind
+           ========================================== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: #FAFAFA !important; /* Wu Jo 清爽白底 */
+            color: #333333 !important;
+            padding-bottom: 100px; /* 留空間給底部的輸入欄 */
+        }
+
+        /* 頂部聊天對象導覽列 */
+        .chat-header-bar {
+            position: fixed;
+            top: 70px; /* 避開頂部主導覽列 */
+            left: 0;
+            right: 0;
+            height: 60px;
+            background-color: #FFFFFF;
+            border-bottom: 1px solid #EFEFEF;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 99;
+        }
+
+        .back-btn {
+            text-decoration: none;
+            color: #823A00;
+            font-weight: bold;
+            margin-right: 16px;
+            font-size: 14px;
+        }
+
+        /* ❌ 就是這裡！嚴格限制頭貼大小，絕對不會再塞滿螢幕 */
+        .chat-target-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: #FAFAFA;
+            border: 2px solid #F5EFEA;
+            margin-right: 12px;
+            object-fit: cover;
+        }
+
+        .chat-target-name {
+            font-size: 16px;
+            font-weight: 800;
+            color: #222222;
+        }
+
+        /* 聊天泡泡主容器 */
+        .chat-main-container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 150px 20px 100px 20px; /* 上方留空給兩個 header */
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* 訊息泡泡共用樣式 */
+        .message-row {
+            display: flex;
+            width: 100%;
+        }
+
+        /* 他人傳送的訊息（靠左） */
+        .message-row.received {
+            justify-content: flex-start;
+        }
+
+        /* 自己傳送的訊息（靠右） */
+        .message-row.sent {
+            justify-content: flex-end;
+        }
+
+        .bubble {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            line-height: 1.5;
+            word-break: break-all;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+
+        /* 他人泡泡：灰色底 */
+        .received .bubble {
+            background-color: #FFFFFF;
+            color: #333333;
+            border: 1px solid #EFEFEF;
+            border-top-left-radius: 4px;
+        }
+
+        /* 自己泡泡：Wu Jo 焦糖金棕底 */
+        .sent .bubble {
+            background: linear-gradient(135deg, #B37A48 0%, #823A00 100%);
+            color: #FFFFFF;
+            border-top-right-radius: 4px;
+        }
+
+        /* 底部對話輸入欄 */
+        .chat-input-wrapper {
+            position: fixed;
+            bottom: 70px; /* 避開最底下的分頁選單 */
+            left: 0;
+            right: 0;
+            background-color: #FFFFFF;
+            border-top: 1px solid #EFEFEF;
+            padding: 12px 20px;
+            z-index: 99;
+        }
+
+        .chat-input-container {
+            max-width: 440px;
+            margin: 0 auto;
+            display: flex;
+            gap: 12px;
+        }
+
+        .message-input {
+            flex: 1;
+            height: 40px;
+            border-radius: 20px;
+            border: 1px solid #EFEFEF;
+            background-color: #FAFAFA;
+            padding: 0 16px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .message-input:focus {
+            border-color: #B37A48;
+        }
+
+        .send-btn {
+            height: 40px;
+            padding: 0 20px;
+            border-radius: 20px;
+            border: none;
+            background-color: #823A00;
+            color: #FFFFFF;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .send-btn:hover {
+            background-color: #632C00;
+        }
+    </style>
+</head>
+<body>
+
+    <%- include('section/nav') %>
+
+    <div class="chat-header-bar">
+        <a href="/messages" class="back-btn">← 返回</a>
+        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= chatTarget.avatar %>" class="chat-target-avatar" alt="avatar">
+        <span class="chat-target-name"><%= chatTarget.name %></span>
+    </div>
+
+    <main class="chat-main-container">
+        
+        <div class="message-row received">
+            <div class="bubble">
+                嗨！請問這週二晚上你有空一起在 Kinetics Studio 練舞嗎？
+            </div>
+        </div>
+
+        <div class="message-row sent">
+            <div class="bubble">
+                有空啊！我要練 Popping，你那天打算練什麼舞風？
+            </div>
+        </div>
+
+        <div class="message-row received">
+            <div class="bubble">
+                太好了，我想抓一下 House 的基礎律動，到時候教室見！
+            </div>
+        </div>
+
+    </main>
+
+    <div class="chat-input-wrapper">
+        <div class="chat-input-container">
+            <input type="text" class="message-input" placeholder="輸入訊息...">
+            <button class="send-btn">傳送</button>
+        </div>
+    </div>
+
+</body>
+</html>

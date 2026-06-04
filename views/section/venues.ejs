@@ -1,0 +1,132 @@
+<style>
+    /* 教室單卡片容器 */
+    .venue-card-item {
+        background-color: #FFFFFF !important; /* 卡片轉為純白 */
+        border: 1px solid #EFEFEF;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+        display: flex;
+        flex-direction: column;
+        text-decoration: none !important; /* 移除超連結下底線 */
+        color: #000000 !important;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        width: 100%;
+    }
+
+    .venue-card-item:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(130, 58, 0, 0.08); /* 焦糖棕微透陰影 */
+    }
+
+    .venue-card-item:active {
+        transform: scale(0.98);
+    }
+
+    /* 圖片外殼：嚴格控制 16:9 比例與高度 */
+    .venue-card-img-box {
+        width: 100%;
+        height: 180px; 
+        background-color: #EFEFEF;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .venue-card-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* 確保圖片不變形完美填充 */
+        display: block;
+    }
+
+    /* 區域標籤 */
+    .venue-card-badge {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        background-color: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        color: #FFFFFF;
+        font-size: 11px;
+        font-weight: 500;
+        padding: 4px 10px;
+        border-radius: 8px;
+    }
+
+    /* 卡片文字內容區 */
+    .venue-card-content {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    /* 標題與評分列 */
+    .venue-card-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .venue-card-title {
+        font-size: 16px;
+        font-weight: 900;
+        color: #333333;
+    }
+
+    .venue-card-rating {
+        font-size: 13px;
+        color: #CC8C53; /* 系統金色調評分 */
+        font-weight: 700;
+    }
+
+    /* 價格標籤 */
+    .venue-card-price {
+        font-size: 14px;
+        color: #823A00; /* 焦糖棕系統主色 */
+        font-weight: 800;
+    }
+
+    /* 底部動作文字提示 */
+    .venue-card-action-text {
+        font-size: 12px;
+        color: #B37A48;
+        font-weight: 500;
+        margin-top: 4px;
+        border-top: 1px dashed #EFEFEF;
+        padding-top: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+</style>
+
+<% rooms.forEach((room, index) => { %>
+    <a href="/venues/<%= index %>" class="venue-card-item">
+        
+        <div class="venue-card-img-box">
+            <img src="<%= room.image || '/img/venues1.jpg' %>" 
+                 onerror="this.src='/img/venues1.jpg'; this.onerror=null;" 
+                 class="venue-card-img" 
+                 alt="<%= room.name %>">
+            
+            <% if (room.dist) { %>
+                <div class="venue-card-badge">📍 <%= room.dist %></div>
+            <% } %>
+        </div>
+
+        <div class="venue-card-content">
+            <div class="venue-card-meta">
+                <h3 class="venue-card-title"><%= room.name %></h3>
+                <span class="venue-card-rating">★ 4.9</span>
+            </div>
+            
+            <p class="venue-card-price">$ <%= room.price %> / 小時</p>
+            
+            <div class="venue-card-action-text">
+                <span>查看完整設備與時段</span>
+                <span>→</span>
+            </div>
+        </div>
+    </a>
+<% }) %>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <%- include('section/head') %>
+    <title>登入 - Wu Jo</title>
+    <style>
+        /* ==========================================
+           全純 CSS 控制，完全不依賴任何 Tailwind
+           ========================================== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #FAFAFA;
+            color: #000000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: screen; /* 支援舊版瀏覽器防呆 */
+            min-height: 100vh;
+            padding: 0 24px;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 380px;
+            background-color: #FFFFFF;
+            padding: 40px 32px;
+            border-radius: 28px;
+            border: 1px solid #EFEFEF;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.04);
+        }
+
+        /* 頂部標頭 */
+        .login-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .login-logo {
+            font-size: 36px;
+            font-weight: 900;
+            font-style: italic;
+            letter-spacing: -1px;
+            /* Wu Jo 經典焦糖漸層色調 */
+            background: linear-gradient(to right, #B37A48, #823A00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        .login-subtitle {
+            font-size: 13px;
+            color: #999999;
+        }
+
+        /* 表單排版 */
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #666666;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            margin-left: 4px;
+            text-transform: uppercase;
+        }
+
+        .form-input {
+            width: 100%;
+            background-color: #FAFAFA;
+            border: 1px solid #E0E0E0;
+            border-radius: 16px;
+            padding: 14px 20px;
+            font-size: 14px;
+            color: #000000;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-input::placeholder {
+            color: #BBBBBB;
+        }
+
+        /* 輸入框聚焦：改為 Wu Jo 金棕色 */
+        .form-input:focus {
+            border-color: #CC8C53;
+            box-shadow: 0 0 0 1px #CC8C53;
+        }
+
+        /* 登入大按鈕 */
+        .btn-login-submit {
+            width: 100%;
+            background-color: #823A00;
+            color: #FFFFFF;
+            border: none;
+            padding: 16px 0;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 12px;
+            box-shadow: 0 4px 12px rgba(130, 58, 0, 0.15);
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .btn-login-submit:hover {
+            background-color: #653600;
+        }
+
+        .btn-login-submit:active {
+            transform: scale(0.98);
+        }
+
+        /* 底部提示連結 */
+        .login-footer-text {
+            text-align: center;
+            font-size: 12px;
+            color: #999999;
+            margin-top: 28px;
+        }
+
+        .login-link {
+            color: #B37A48;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .login-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="login-card">
+        
+        <div class="login-header">
+            <h1 class="login-logo">WU JO</h1>
+            <p class="login-subtitle">進入你的舞蹈與共享空間</p>
+        </div>
+
+        <form action="/login" method="POST" class="login-form">
+            
+            <div class="form-group">
+                <label class="form-label">舞者帳號</label>
+                <input type="text" name="username" placeholder="輸入你的舞者 ID (e.g. 256)" required class="form-input">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">密碼</label>
+                <input type="password" name="password" placeholder="••••••••" required class="form-input">
+            </div>
+            
+            <button type="submit" class="btn-login-submit">
+                登入系統
+            </button>
+        </form>
+
+        <p class="login-footer-text">
+            還沒有帳號？ <a href="#" class="login-link">立即加入</a>
+        </p>
+    </div>
+
+</body>
+</html>

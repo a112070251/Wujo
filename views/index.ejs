@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <%- include('section/head') %>
+    <title>Wu Jo - 舞者社群平台</title>
+    
+    <style>
+        /* ==========================================
+           全域大地色系變數防禦機制 (防止 style.css 讀不到)
+           ========================================== */
+        :root {
+            --font-main: "Noto Sans TC", sans-serif;
+            --color-brand: #823A00;          /* 1. 左上角系統名稱 Wu Jo */
+            --color-nav-active: #653600;     /* 2. 自己所在的畫面 */
+            --color-nav-inactive: #B37A48;   /* 3. 自己不在的選單 */
+            --color-accent: #CC8C53;         /* 4. 強調色 / 功能按鈕 */
+            --color-bg-main: #FFFFFF;        /* 底色 #FFFFFF */
+            --color-bg-card: #EFEFEF;        /* 訊息底色、功能文字 #EFEFEF */
+            --color-text-main: #000000;      /* 文字顏色 #000000 */
+        }
+
+        /* 重設基礎樣式，強制洗掉原先的黑底 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-main);
+        }
+
+        body {
+            background-color: var(--color-bg-main) !important;
+            color: var(--color-text-main) !important;
+            padding-bottom: 100px;
+        }
+
+        .main-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px 16px;
+        }
+
+        /* 1. 頂部主標題 */
+        .hero-header {
+            text-align: center;
+            margin-top: 40px;
+            margin-bottom: 40px;
+        }
+
+        .hero-title {
+            font-size: 36px;
+            font-weight: 900;
+            color: var(--color-text-main);
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+        }
+
+        .hero-subtitle {
+            font-size: 14px;
+            color: var(--color-brand);
+            letter-spacing: 3px;
+        }
+
+        /* 2. 合作教室優惠 Banner */
+        .promo-banner {
+            background-color: var(--color-bg-card);
+            border-radius: 24px;
+            overflow: hidden;
+            position: relative;
+            max-width: 550px;
+            margin: 0 auto 48px auto;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            display: block;
+            text-decoration: none;
+        }
+
+        .promo-img {
+            width: 100%;
+            height: auto;
+            max-height: 220px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .promo-content {
+            padding: 20px;
+            background-color: var(--color-bg-card);
+        }
+
+        .tag-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .badge-sponsored {
+            background-color: var(--color-brand);
+            color: #FFFFFF;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        .venue-partner-text {
+            font-size: 12px;
+            color: #555555;
+        }
+
+        .promo-headline {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--color-text-main);
+            line-height: 1.4;
+        }
+
+        .highlight-price {
+            color: var(--color-brand);
+            font-size: 22px;
+            font-weight: 900;
+        }
+
+        .promo-footer-text {
+            font-size: 12px;
+            color: #777777;
+            margin-top: 6px;
+        }
+
+        /* 3. 各版塊通用標題 */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            max-width: 550px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--color-text-main);
+        }
+
+        .btn-view-all {
+            color: var(--color-accent);
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        /* 4. 最新貼文卡片 */
+        .post-card {
+            background-color: var(--color-bg-card);
+            border-radius: 24px;
+            padding: 20px;
+            display: block;
+            text-decoration: none;
+            color: var(--color-text-main);
+            max-width: 550px;
+            margin: 0 auto 36px auto;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+
+        .post-author-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .author-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: #CCCCFF;
+        }
+
+        .author-name {
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .post-time {
+            font-size: 11px;
+            color: #777777;
+        }
+
+        .post-body {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #222222;
+            margin-bottom: 12px;
+        }
+
+        .hashtag-container {
+            display: flex;
+            gap: 6px;
+        }
+
+        .hashtag {
+            font-size: 11px;
+            background-color: rgba(130, 58, 0, 0.08);
+            color: var(--color-brand);
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+
+        /* 5. 推薦場地卡片 */
+        .venue-card {
+            background-color: var(--color-bg-card);
+            border-radius: 24px;
+            overflow: hidden;
+            display: block;
+            text-decoration: none;
+            color: var(--color-text-main);
+            max-width: 550px;
+            margin: 0 auto;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+
+        .venue-img-wrapper {
+            width: 100%;
+            height: 150px;
+            background-color: #E0E0E0;
+        }
+
+        .venue-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .venue-info {
+            padding: 20px;
+        }
+
+        .venue-name {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .venue-location {
+            font-size: 13px;
+            color: #666666;
+            margin-bottom: 8px;
+        }
+
+        .venue-price {
+            font-size: 18px;
+            font-weight: 900;
+            color: var(--color-brand);
+        }
+    </style>
+</head>
+<body>
+
+    <%- include('section/nav') %>
+
+    <div class="main-container">
+        
+        <header class="hero-header"> 
+            <h2 class="hero-title">跳~~~舞~~~</h2>
+            <p class="hero-subtitle">你你你你要跳舞嗎?</p>
+        </header>
+
+       <a href="/venues" class="new-promo-banner">
+            <div class="banner-image-container">
+                <img src="/img/banner.jpg" class="banner-img" alt="合作教室">
+            </div>
+
+            <div class="banner-content">
+                <div class="banner-tag-row">
+                    <span class="badge-sponsored">Sponsored</span>
+                    <span class="venue-name-text">合作教室：Studio</span>
+                </div>
+
+                <h4 class="banner-title">
+                    憑 App 簽到頁面，<span class="highlight-discount">場租享 9 折優惠</span>
+                </h4>
+
+                <p class="banner-footer-text">點擊查看詳情與位置</p>
+            </div>
+        </a>
+
+        <div class="sections-space">
+            
+            <section>
+                <div class="section-header">
+                    <h3 class="section-title">👯 最新貼文</h3>
+                    <a href="/partner" class="btn-view-all">查看全部</a>
+                </div>
+                
+                <a href="/partner" class="post-card">
+                    <div class="post-author-box">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= featuredPost.author %>" class="author-avatar">
+                        <div>
+                            <p class="author-name"><%= featuredPost.author %></p>
+                            <p class="post-time"><%= featuredPost.time %></p>
+                        </div>
+                    </div>
+                    <p class="post-body"><%= featuredPost.content %></p>
+                    <div class="hashtag-container">
+                        <% featuredPost.hashtags.forEach(tag => { %>
+                            <span class="hashtag">#<%= tag %></span>
+                        <% }) %>
+                    </div>
+                </a>
+            </section>
+
+            <section style="margin-top: 36px;">
+                <div class="section-header">
+                    <h3 class="section-title">📍 推薦場地</h3>
+                    <a href="/venues" class="btn-view-all">尋找更多</a>
+                </div>
+                
+                <a href="/venues" class="venue-card">
+                    <div class="venue-img-wrapper">
+                        <img src="<%= featuredVenue.image %>" class="venue-img">
+                    </div>
+                    <div class="venue-info">
+                        <h4 class="venue-name"><%= featuredVenue.name %></h4>
+                        <p class="venue-location">🔍 <%= featuredVenue.location %></p>
+                        <div class="venue-price">$<%= featuredVenue.price %> <span style="font-size: 11px; font-weight: normal; color: #777;">/ hr</span></div>
+                    </div>
+                </a>
+            </section>
+
+        </div>
+    </div>
+
+</body>
+</html>

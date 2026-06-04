@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <%- include('section/head') %>
+    <title>個人資訊 - <%= profile.name %></title>
+    
+    <style>
+        /* ==========================================
+           個人資訊頁專屬純 CSS 樣式
+           ========================================== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #FFFFFF !important; /* 大底色純白 */
+            color: #000000 !important; /* 文字純黑 */
+            padding-bottom: 120px; /* 留給底部選單的空間 */
+        }
+
+        .profile-container {
+            max-width: 480px; /* 控制個人名片寬度 */
+            margin: 0 auto;
+            padding: 80px 16px 20px 16px; /* pt-80 完美避開頂部固定導覽列 */
+        }
+
+        /* 1. 返回按鈕 */
+        .btn-back-row {
+            background: none;
+            border: none;
+            color: #B37A48; /* 自己不在選單的色票 */
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 20px;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .btn-back-row:hover {
+            color: #653600;
+        }
+
+        /* 2. 個人卡片主體 */
+        .profile-card {
+            background-color: #EFEFEF; /* 區塊底色#EFEFEF */
+            border-radius: 32px;
+            padding: 32px 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+            position: relative;
+        }
+
+        /* 3. 頭像與名字區塊 */
+        .profile-avatar-wrapper {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .avatar-container {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+
+        .profile-img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 4px solid #FFFFFF;
+            background-color: #E0E0E0;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            display: block;
+        }
+
+        /* 異常警示標籤 */
+        .badge-danger {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            background-color: #D32F2F;
+            color: #FFFFFF;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 3px 10px;
+            border-radius: 12px;
+            box-shadow: 0 2px 6px rgba(211, 47, 47, 0.4);
+            animation: pulse-alert 2s infinite;
+        }
+
+        @keyframes pulse-alert {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
+        .user-name {
+            font-size: 24px;
+            font-weight: 900;
+            color: #000000;
+        }
+
+        .dance-type-tag {
+            font-size: 14px;
+            font-weight: 700;
+            color: #CC8C53; /* 強調色/功能按鈕 */
+            margin-top: 4px;
+        }
+
+        /* 4. 內文資料區塊 */
+        .info-group {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 28px;
+        }
+
+        .info-box {
+            background-color: #FFFFFF; /* 卡片內部方塊轉為純白 */
+            padding: 16px 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(0,0,0,0.02);
+        }
+
+        .info-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: #B37A48;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .intro-text {
+            font-size: 14px;
+            color: #333333;
+            margin-top: 8px;
+            line-height: 1.6;
+            font-style: italic;
+        }
+
+        /* 信用紀錄特殊側邊條 */
+        .credit-box {
+            border-left: 5px solid #2E7D32; /* 正常時綠色 */
+        }
+        
+        .credit-box.alert-mode {
+            border-left: 5px solid #D32F2F; /* 異常時紅色 */
+        }
+
+        .credit-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 6px;
+        }
+
+        .credit-title {
+            font-size: 14px;
+            color: #333333;
+        }
+
+        .credit-count {
+            font-size: 18px;
+            font-weight: 900;
+        }
+
+        .text-green { color: #2E7D32; }
+        .text-red { color: #D32F2F; }
+
+        /* 5. 按鈕控制列 */
+        .action-row-main {
+            display: flex;
+            gap: 12px;
+            margin-top: 28px;
+        }
+
+        .btn-primary-dm {
+            flex: 2;
+            background-color: #823A00; /* 左上角系統名稱主色 */
+            color: #FFFFFF !important;
+            text-align: center;
+            padding: 14px 0;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 15px;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(130, 58, 0, 0.15);
+            transition: transform 0.1s ease;
+        }
+
+        .btn-secondary-report {
+            flex: 1;
+            background-color: #FFFFFF;
+            color: #B37A48 !important;
+            border: 1px solid #DDDDDD;
+            text-align: center;
+            padding: 14px 0;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 14px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary-report:hover {
+            background-color: #FFF5F5;
+            color: #D32F2F !important;
+            border-color: #FFCDD2;
+        }
+
+        .action-row-full {
+            margin-top: 12px;
+        }
+
+        .btn-accent-review {
+            display: block;
+            background-color: #CC8C53; /* 強調色/功能按鈕 */
+            color: #FFFFFF !important;
+            text-align: center;
+            padding: 14px 0;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 14px;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(204, 140, 83, 0.15);
+            transition: transform 0.1s ease;
+        }
+
+        .btn-primary-dm:active, .btn-accent-review:active, .btn-secondary-report:active {
+            transform: scale(0.97);
+        }
+    </style>
+</head>
+<body>
+
+    <%- include('section/nav') %>
+
+    <div class="profile-container">
+        
+        <a href="javascript:history.back()" class="btn-back-row">
+            <span>←</span> 返回
+        </a>
+
+        <div class="profile-card">
+            
+            <div class="profile-avatar-wrapper">
+                <div class="avatar-container">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= profile.avatar %>" class="profile-img" alt="頭像">
+                    <% if (profile.reportCount >= 4) { %>
+                        <span class="badge-danger">異常</span>
+                    <% } %>
+                </div>
+                <h1 class="user-name"><%= profile.name %></h1>
+                <p class="dance-type-tag"><%= profile.danceType %></p>
+            </div>
+
+            <div class="info-group">
+                <div class="info-box">
+                    <label class="info-label">個人介紹</label>
+                    <p class="intro-text">"<%= profile.intro %>"</p>
+                </div>
+
+                <div class="info-box credit-box <%= profile.reportCount >= 4 ? 'alert-mode' : '' %>">
+                    <label class="info-label">信用紀錄</label>
+                    <div class="credit-row">
+                        <span class="credit-title">累計檢舉次數</span>
+                        <span class="credit-count <%= profile.reportCount >= 4 ? 'text-red' : 'text-green' %>">
+                            <%= profile.reportCount %> 次
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-row-main">
+                <a href="/chat/<%= profile.name %>" class="btn-primary-dm">立即私訊</a>
+                <a href="/blacklist?target=<%= profile.name %>" class="btn-secondary-report">檢舉</a>
+            </div>
+
+            <div class="action-row-full">
+                <a href="/review?target=<%= profile.name %>" class="btn-accent-review">評價夥伴</a>
+            </div>
+            
+        </div>
+    </div>
+
+</body>
+</html>
