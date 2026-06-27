@@ -17,11 +17,10 @@
         body {
             background-color: #FAFAFA !important; /* Wu Jo 清爽白底 */
             color: #333333 !important;
-            /* ❌ 這裡已經完全拔除 padding-top，消滅多餘空隙！ */
             padding-bottom: 140px; /* 留出底部導覽列空間 */
         }
 
-        /* 核心修正：強制置中與寬度限制 */
+        /* 強制置中與寬度限制 */
         .main-container {
             width: 100% !important;
             max-width: 440px !important; /* 黃金手機寬度 */
@@ -85,7 +84,7 @@
 
         /* 表單排版 */
         .form-section {
-            margin-bottom: 28px;
+            margin-bottom: 32px;
         }
 
         .section-label {
@@ -148,6 +147,25 @@
             color: #823A00;
         }
 
+        /* 🟢 新增：具體評語文字框樣式 */
+        .comment-textarea {
+            width: 100%;
+            height: 100px;
+            border-radius: 16px;
+            border: 1px solid #EFEFEF;
+            background-color: #FFFFFF;
+            padding: 12px 16px;
+            font-size: 14px;
+            color: #333333;
+            resize: none;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .comment-textarea:focus {
+            border-color: #B37A48;
+        }
+
         /* 提交按鈕 */
         .submit-btn {
             width: 100%;
@@ -186,7 +204,7 @@
 
     <div style="width: 100%; display: flex; justify-content: center;">
         <main class="main-container">
-            <h2 class="page-title">練舞結束！<br>給隊友個評價吧</h2>
+            <h2 class="page-title">練舞結束！<br>给隊友個評價吧</h2>
             
             <div class="target-user-card">
                 <div class="avatar-border">
@@ -197,6 +215,8 @@
             </div>
 
             <form action="/submit-review" method="POST">
+                
+                <input type="hidden" name="targetName" value="<%= targetUser.name %>">
                 
                 <div class="form-section">
                     <label class="section-label">整體合作愉快嗎？</label>
@@ -210,7 +230,7 @@
                     <input type="hidden" name="rating" id="ratingScore" value="4">
                 </div>
 
-                <div class="form-section" style="margin-top: 40px; margin-bottom: 40px;">
+                <div class="form-section">
                     <label class="section-label">這名舞者的優點？</label>
                     <div class="tag-pool">
                         <button type="button" class="feature-tag-btn">#超級準時</button>
@@ -221,12 +241,18 @@
                     <input type="hidden" name="tags" id="selectedTags" value="#態度親切">
                 </div>
 
+                <div class="form-section">
+                    <label class="section-label">留點話給他/她（可選填）</label>
+                    <textarea name="comment" class="comment-textarea" placeholder="寫下這次約練的心得或感謝吧..."></textarea>
+                </div>
+
                 <button type="submit" class="submit-btn">提交評價</button>
             </form>
         </main>
     </div>
 
     <script>
+        // 星星互動邏輯
         const stars = document.querySelectorAll('.star-btn');
         const ratingInput = document.getElementById('ratingScore');
 
@@ -243,6 +269,7 @@
             });
         });
 
+        // 標籤選取互動邏輯
         const tags = document.querySelectorAll('.feature-tag-btn');
         const tagsInput = document.getElementById('selectedTags');
 
