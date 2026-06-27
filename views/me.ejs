@@ -5,7 +5,7 @@
     <title>個人檔案 - Wu Jo</title>
     <style>
         /* ==========================================
-           全純 CSS 控制，完全不依賴任何 Tailwind
+           個人中心專屬純 CSS 樣式
            ========================================== */
         * {
             box-sizing: border-box;
@@ -15,21 +15,38 @@
         }
 
         body {
-            background-color: #FAFAFA !important; /* 全面改為 Wu Jo 清爽白底 */
+            background-color: #FAFAFA !important; /* 同步 Wu Jo 清爽底色 */
             color: #333333 !important;
-            padding-bottom: 120px;
         }
 
-        .main-container {
-            max-width: 480px;
-            margin: 0 auto;
-            padding: 80px 20px 20px 20px;
+        /* 🟢 核心排版：完全看齊找攝影與找教室的大容器，拉齊留白邊界 */
+        .main-content {
+            padding-top: 20px;
+            padding-bottom: 90px;
         }
 
-        /* 個人資訊區塊 */
-        .profile-section {
+        /* 桌機版自動開啟「左右雙欄並排」的高質感排版 */
+        .profile-grid-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        @media (min-width: 992px) {
+            .profile-grid-layout {
+                grid-template-columns: 320px 1fr; /* 左側固定頭銜區，右側滿版內容區 */
+            }
+        }
+
+        /* 個人資訊大卡片 */
+        .profile-main-card {
+            background-color: #FFFFFF;
+            border-radius: 20px;
+            padding: 32px 24px;
             text-align: center;
-            padding: 24px 0;
+            border: 1px solid #EFEFEF;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
         }
 
         .avatar-wrapper {
@@ -43,9 +60,8 @@
             height: 120px;
             border-radius: 50%;
             padding: 4px;
-            /* 換上 Wu Jo 焦糖金棕漸層环 */
             background: linear-gradient(135deg, #B37A48 0%, #823A00 100%);
-            box-shadow: 0 8px 24px rgba(130, 58, 0, 0.15);
+            box-shadow: 0 6px 18px rgba(130, 58, 0, 0.15);
             overflow: hidden;
         }
 
@@ -63,7 +79,6 @@
             transform: scale(0.8);
         }
 
-        /* 更換頭貼小按鈕 */
         #changeAvatarBtn {
             position: absolute;
             bottom: 2px;
@@ -85,9 +100,9 @@
         #changeAvatarBtn svg { width: 14px; height: 14px; stroke: currentColor; }
 
         .user-name {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 900;
-            color: #111111;
+            color: #222222;
             margin-bottom: 6px;
         }
 
@@ -101,6 +116,7 @@
         .tag-container {
             display: flex;
             justify-content: center;
+            wrap: wrap;
             gap: 8px;
             margin-top: 16px;
         }
@@ -116,71 +132,67 @@
             border: 1px solid rgba(179, 122, 72, 0.15);
         }
 
-        /* 數據列 */
+        /* 數據展示列 */
         .stats-container {
             display: flex;
-            justify-content: center;
-            gap: 48px;
+            justify-content: space-around;
             margin-top: 28px;
-            background: #FFFFFF;
-            padding: 16px;
-            border-radius: 20px;
-            border: 1px solid #EFEFEF;
+            padding-top: 20px;
+            border-top: 1px solid #FAFAFA;
         }
 
         .stat-box { text-align: center; }
-        .stat-num { display: block; font-size: 20px; font-weight: 900; color: #823A00; }
-        .stat-label { font-size: 11px; color: #888888; letter-spacing: 1px; margin-top: 2px; }
+        .stat-num { display: block; font-size: 18px; font-weight: 900; color: #823A00; }
+        .stat-label { font-size: 11px; color: #888888; margin-top: 2px; }
 
-        /* 卡片共用樣式 */
+        /* 右側區段通用排版 */
         .section-title-box {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin: 32px 0 12px 0;
+            margin-bottom: 12px;
         }
-        .section-title { font-size: 16px; font-weight: 800; color: #333333; }
+        .section-title-box.with-top-margin {
+            margin-top: 24px;
+        }
+        .section-title { font-size: 15px; font-weight: 900; color: #222222; }
         .section-badge { font-size: 10px; font-weight: 700; color: #B37A48; background: #F5EFEA; padding: 4px 8px; border-radius: 8px; }
 
         .info-card {
             background-color: #FFFFFF;
-            border-radius: 24px;
+            border-radius: 20px;
             padding: 24px;
             border: 1px solid #EFEFEF;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.02);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
         }
 
-        /* 信用安全報告排版 */
+        /* 信用安全報告 */
         .report-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
-        .report-title-sub { font-size: 11px; color: #888888; letter-spacing: 1px; margin-bottom: 4px; }
+        .report-title-sub { font-size: 11px; color: #888888; letter-spacing: 0.5px; margin-bottom: 4px; }
         .report-score-box { display: flex; align-items: baseline; gap: 2px; }
-        
-        /* 🎨 優化：新增分數文字的顏色控制 class，徹底解決 VS Code 報錯 */
-        .report-score-num { font-size: 40px; font-weight: 900; color: #333333; }
+        .report-score-num { font-size: 36px; font-weight: 900; color: #222222; }
         .report-score-num.score-warn { color: #EF6C00; }
-        
         .report-score-unit { font-size: 13px; color: #888888; }
 
-        /* 狀態標籤顏色的純 CSS 樣式 */
         .status-badge { font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px; border: 1px solid transparent; }
         .status-good { color: #2E7D32; background: #E8F5E9; border-color: rgba(46,125,50,0.1); }
         .status-warn { color: #EF6C00; background: #FFF3E0; border-color: rgba(239,108,0,0.1); animation: pulse 2s infinite; }
         .status-danger { color: #C62828; background: #FFEBEE; border-color: rgba(198,40,40,0.1); }
 
         /* 進度條 */
-        .progress-track { width: 100%; height: 10px; background-color: #F5F5F5; border-radius: 10px; overflow: hidden; margin-bottom: 16px; border: 1px solid #EFEFEF; }
-        .progress-bar { height: 10px; transition: width 0.6s ease; }
+        .progress-track { width: 100%; height: 8px; background-color: #FAFAFA; border-radius: 10px; overflow: hidden; margin-bottom: 16px; border: 1px solid #EFEFEF; }
+        .progress-bar { height: 8px; transition: width 0.6s ease; }
         .bar-green { background-color: #4CAF50; }
         .bar-yellow { background-color: #FFB300; }
         .bar-red { background-color: #E53935; }
 
-        /* 違規明細提示盒 */
-        .alert-box { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-radius: 16px; font-size: 13px; border: 1px solid transparent; }
+        /* 警告資訊框 */
+        .alert-box { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-radius: 12px; font-size: 13px; border: 1px solid transparent; }
         .alert-box-warn { background-color: #FFFDE7; border-color: #FFF59D; color: #F57F17; font-weight: 600; }
         .alert-box-danger { background-color: #FFEBEE; border-color: #FFCDD2; color: #C62828; }
         .alert-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 8px; }
@@ -191,27 +203,70 @@
         .warning-text { font-size: 12px; font-weight: 700; margin-top: 10px; }
         .text-color-warn { color: #E65100; }
         .text-color-normal { color: #777777; font-style: italic; }
+        .notice-text { font-size: 11px; color: #A0A0A0; margin-top: 14px; line-height: 1.5; }
 
-        .notice-text { font-size: 11px; color: #A0A0A0; margin-top: 16px; line-height: 1.5; }
-
-        /* 近期預約卡片排版 */
+        /* 近期預約項目 */
         .booking-item { display: flex; align-items: center; gap: 16px; }
         .booking-date-block {
-            width: 56px;
-            height: 56px;
-            border-radius: 16px;
-            /* 換上 Wu Jo 品牌專屬漸層 */
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
             background: linear-gradient(135deg, #B37A48 0%, #823A00 100%);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             color: #FFFFFF;
+            flex-shrink: 0;
         }
-        .booking-month { font-size: 10px; font-weight: 700; text-transform: uppercase; opacity: 0.9; }
-        .booking-day { font-size: 18px; font-weight: 900; }
-        .booking-details h4 { font-size: 14px; font-weight: 700; color: #333333; }
+        .booking-month { font-size: 9px; font-weight: 700; text-transform: uppercase; opacity: 0.9; }
+        .booking-day { font-size: 16px; font-weight: 900; }
+        .booking-details h4 { font-size: 14px; font-weight: 700; color: #222222; }
         .booking-details p { font-size: 12px; color: #888888; margin-top: 2px; }
+
+        /* 📷 攝影接案控制面板 */
+        .photographer-panel-card {
+            background: #FFFFFF; 
+            border: 1px solid #EFEFEF; 
+            padding: 24px; 
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        }
+        .photographer-status-box {
+            margin-bottom: 16px; 
+            padding: 12px 16px; 
+            background: rgba(6, 199, 85, 0.05); 
+            border: 1px solid rgba(6, 199, 85, 0.15);
+            border-radius: 12px; 
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .photo-input-field {
+            flex: 1; 
+            padding: 11px 14px; 
+            background-color: #FAFAFA;
+            border: 1px solid #EFEFEF; 
+            border-radius: 12px; 
+            font-size: 13px;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .photo-input-field:focus {
+            border-color: #06C755;
+            background-color: #FFFFFF;
+        }
+        .btn-update-photo {
+            background: #06C755; 
+            color: white; 
+            border: none; 
+            padding: 12px; 
+            border-radius: 12px; 
+            font-weight: 700; 
+            font-size: 13px; 
+            cursor: pointer; 
+            transition: opacity 0.2s;
+        }
+        .btn-update-photo:hover { opacity: 0.9; }
 
         @keyframes pulse {
             0% { opacity: 1; }
@@ -224,140 +279,184 @@
 
     <%- include('section/nav') %>
 
-    <main class="main-container">
-        
-        <section class="profile-section">
-            <div class="avatar-wrapper">
-                <div class="avatar-border">
-                    <img id="userAvatar" alt="User Avatar" 
-                         src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= user.name %>" />
-                </div>
-                <button id="changeAvatarBtn" title="隨機更換頭貼">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                    </svg>
-                </button>
-            </div>
+    <!-- 主體內容區 (套用標準大容器寬度) -->
+    <main class="main-content">
+        <div class="container">
             
-            <h2 class="user-name"><%= user.name %></h2>
-            <p class="user-bio">" 能力越小，責任越小 "</p>
-            
-            <div class="tag-container">
-                <span class="dance-tag">popping</span>
-                <span class="dance-tag">House</span>
-            </div>
-
-            <div class="stats-container">
-                <div class="stat-box">
-                    <span class="stat-num">12</span>
-                    <span class="stat-label">次預約</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-num">4.8</span>
-                    <span class="stat-label">評分</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-num">15</span>
-                    <span class="stat-label">貼文</span>
-                </div>
-            </div>
-        </section>
-
-        <section>
-            <div class="section-title-box">
-                <h3 class="section-title">信用安全報告</h3>
-                <span class="section-badge">系統自動監控中</span>
-            </div>
-
-            <div class="info-card">
-                <% 
-                    // 後端計算檢舉狀態與對應顏色樣式
-                    let reportCount = (locals.user && user.reports) ? user.reports : 0;
-                    let barClass = "bar-green"; 
-                    let statusClass = "status-good";
-                    let statusText = "優良";
-
-                    if (reportCount == 4) {
-                        barClass = "bar-yellow";
-                        statusClass = "status-warn";
-                        statusText = "異常警告";
-                    } else if (reportCount >= 5) {
-                        barClass = "bar-red";
-                        statusClass = "status-danger";
-                        statusText = "已停權";
-                    }
+            <div class="profile-grid-layout">
+                
+                <!-- ─── 左側欄：大頭貼與名片區 ─── -->
+                <aside class="profile-main-card">
+                    <div class="avatar-wrapper">
+                        <div class="avatar-border">
+                            <img id="userAvatar" alt="User Avatar" 
+                                 src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= user.name %>" />
+                        </div>
+                        <button id="changeAvatarBtn" title="隨機更換頭貼">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                        </button>
+                    </div>
                     
-                    let progressWidth = Math.min((reportCount / 5) * 100, 100) + '%';
-                %>
+                    <h2 class="user-name"><%= user.name %></h2>
+                    <p class="user-bio">" 能力越小，責任越小 "</p>
+                    
+                    <div class="tag-container">
+                        <span class="dance-tag">popping</span>
+                        <span class="dance-tag">House</span>
+                    </div>
 
-                <div class="report-header">
-                    <div>
-                        <p class="report-title-sub">目前檢舉紀錄</p>
-                        <div class="report-score-box">
-                            <span class="report-score-num <%= reportCount == 4 ? 'score-warn' : '' %>">
-                                <%= reportCount %>
-                            </span>
-                            <span class="report-score-unit">次</span>
+                    <div class="stats-container">
+                        <div class="stat-box">
+                            <span class="stat-num">12</span>
+                            <span class="stat-label">次預約</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-num">4.8</span>
+                            <span class="stat-label">評分</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-num">15</span>
+                            <span class="stat-label">貼文</span>
                         </div>
                     </div>
+                </aside>
 
-                    <div>
-                        <p class="report-title-sub" style="text-align: right;">帳號狀態</p>
-                        <span class="status-badge <%= statusClass %>"><%= statusText %></span>
+                <!-- ─── 右側欄：主要管理控制區 ─── -->
+                <div class="profile-content-area">
+                    
+                    <!-- 1. 信用報告卡片 -->
+                    <div class="section-title-box">
+                        <h3 class="section-title">🛡️ 信用安全報告</h3>
+                        <span class="section-badge">系統自動監控中</span>
                     </div>
-                </div>
 
-                <div class="progress-track">
-                    <div class="progress-bar <%= barClass %>" style="width: <%= progressWidth %>;"></div>
-                </div>
+                    <div class="info-card">
+                        <% 
+                            let reportCount = (locals.user && user.reports) ? user.reports : 0;
+                            let barClass = "bar-green"; 
+                            let statusClass = "status-good";
+                            let statusText = "優良";
 
-                <div>
-                    <% if (reportCount > 0) { %>
-                        <div class="alert-box <%= reportCount >= 4 ? 'alert-box-warn' : 'alert-box-danger' %>">
-                            <div style="display: flex; align-items: center;">
-                                <div class="alert-dot <%= reportCount >= 4 ? 'dot-yellow' : 'dot-red' %>"></div>
-                                <span>收到使用者檢舉：不當行為</span>
+                            if (reportCount == 4) {
+                                barClass = "bar-yellow";
+                                statusClass = "status-warn";
+                                statusText = "異常警告";
+                            } else if (reportCount >= 5) {
+                                barClass = "bar-red";
+                                statusClass = "status-danger";
+                                statusText = "已停權";
+                            }
+                            
+                            let progressWidth = Math.min((reportCount / 5) * 100, 100) + '%';
+                        %>
+
+                        <div class="report-header">
+                            <div>
+                                <p class="report-title-sub">目前檢舉紀錄</p>
+                                <div class="report-score-box">
+                                    <span class="report-score-num <%= reportCount == 4 ? 'score-warn' : '' %>">
+                                        <%= reportCount %>
+                                    </span>
+                                    <span class="report-score-unit">次</span>
+                                </div>
                             </div>
-                            <span class="alert-date">2026-03-18</span>
+
+                            <div>
+                                <p class="report-title-sub" style="text-align: right;">帳號狀態</p>
+                                <span class="status-badge <%= statusClass %>"><%= statusText %></span>
+                            </div>
                         </div>
-                        
-                        <p class="warning-text <%= reportCount == 4 ? 'text-color-warn' : 'text-color-normal' %>">
-                            <% if (reportCount == 4) { %>
-                                ⚠️ 嚴重警告：再收到 1 次檢舉將立即停權
+
+                        <div class="progress-track">
+                            <div class="progress-bar <%= barClass %>" style="width: <%= progressWidth %>;"></div>
+                        </div>
+
+                        <div>
+                            <% if (reportCount > 0) { %>
+                                <div class="alert-box <%= reportCount >= 4 ? 'alert-box-warn' : 'alert-box-danger' %>">
+                                    <div style="display: flex; align-items: center;">
+                                        <div class="alert-dot <%= reportCount >= 4 ? 'dot-yellow' : 'dot-red' %>"></div>
+                                        <span>收到使用者檢舉：不當行為</span>
+                                    </div>
+                                    <span class="alert-date">2026-03-18</span>
+                                </div>
+                                
+                                <p class="warning-text <%= reportCount == 4 ? 'text-color-warn' : 'text-color-normal' %>">
+                                    <% if (reportCount == 4) { %>
+                                        ⚠️ 嚴重警告：再收到 1 次檢舉將立即停權
+                                    <% } else { %>
+                                        ※ 系統偵測到您近期有 <%= reportCount %> 筆異常紀錄
+                                    <% } %>
+                                </p>
                             <% } else { %>
-                                ※ 系統偵測到您近期有 <%= reportCount %> 筆異常紀錄
+                                <div class="alert-box" style="background-color: #FAFAFA; border-color: #EFEFEF; color: #777777;">
+                                    <span>✨ 本週無違規紀錄，繼續保持良好舞德！</span>
+                                </div>
                             <% } %>
-                        </p>
-                    <% } else { %>
-                        <div class="alert-box" style="background-color: #FAFAFA; border-color: #EFEFEF; color: #777777;">
-                            <span>本週無違規紀錄，繼續保持！</span>
                         </div>
-                    <% } %>
-                </div>
 
-                <p class="notice-text">
-                    * 提醒：累積檢舉達 5 次將限制功能。請保持良好禮節，維護 Wu Jo 環境。
-                </p>
-            </div>
-        </section>
+                        <p class="notice-text">
+                            * 提醒：累積檢舉達 5 次將限制功能。請保持良好禮節，維護 Wu Jo 環境。
+                        </p>
+                    </div>
 
-        <section style="margin-top: 32px;">
-            <div class="section-title-box">
-                <h3 class="section-title">近期預約</h3>
-            </div>
+                    <!-- 2. 近期預約卡片 -->
+                    <div class="section-title-box with-top-margin">
+                        <h3 class="section-title">📅 近期預約</h3>
+                    </div>
+                    
+                    <div class="info-card booking-item">
+                        <div class="booking-date-block">
+                            <span class="booking-month">Mar</span>
+                            <span class="booking-day">24</span>
+                        </div>
+                        <div class="booking-details">
+                            <h4>Studio • 18:30</h4>
+                            <p>Kinetics Studio</p>
+                        </div>
+                    </div>
+
+                    <!-- 3. 舞者攝影師設定面板 -->
+                    <div class="section-title-box with-top-margin">
+                        <h3 class="section-title">📷 舞者攝影師設定面板</h3>
+                    </div>
+
+                    <div class="photographer-panel-card">
+                        <div class="photographer-status-box" style="<%= user.isPhotographer ? '' : 'background: #FAFAFA; border-color: #EFEFEF; color: #666;' %>">
+                            狀態：<strong><%= user.isPhotographer ? '🟢 已開啟攝影接案服務' : '⚪ 未開啟攝影服務' %></strong>
+                            <% if(user.isPhotographer) { %>
+                                <br>當前定價：<span style="color: #823A00; font-weight: bold;">$<%= user.photoPrice %>/hr</span>
+                                <br>當前風格：<span style="color: #555; font-weight: 500;"><%= user.photoStyle %></span>
+                            <% } %>
+                        </div>
+
+                        <form action="/update-photographer" method="POST" style="display: flex; flex-direction: column; gap: 14px;">
+                            <div style="display: flex; gap: 16px;">
+                                <label style="font-size: 13px; font-weight: 700; color: #333; cursor: pointer;">
+                                    <input type="radio" name="isPhotographer" value="true" <%= user.isPhotographer ? 'checked' : '' %>> 開啟攝影師身份
+                                </label>
+                                <label style="font-size: 13px; font-weight: 700; color: #333; cursor: pointer;">
+                                    <input type="radio" name="isPhotographer" value="false" <%= !user.isPhotographer ? 'checked' : '' %>> 關閉身份
+                                </label>
+                            </div>
+
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <input type="number" name="photoPrice" value="<%= user.photoPrice %>" placeholder="時薪 (例: 1500)" class="photo-input-field" style="min-width: 100px;" required>
+                                <input type="text" name="photoStyle" value="<%= user.photoStyle %>" placeholder="風格 (例: 街舞動態/日系)" class="photo-input-field" style="flex: 2; min-width: 150px;" required>
+                            </div>
+
+                            <button type="submit" class="btn-update-photo">
+                                💾 儲存並更新我的攝影檔案
+                            </button>
+                        </form>
+                    </div>
+
+                </div> <!-- 右側欄結束 -->
+            </div> <!-- Grid 結束 -->
             
-            <div class="info-card booking-item">
-                <div class="booking-date-block">
-                    <span class="booking-month">Mar</span>
-                    <span class="booking-day">24</span>
-                </div>
-                <div class="booking-details">
-                    <h4>Studio • 18:30</h4>
-                    <p>Kinetics Studio</p>
-                </div>
-            </div>
-        </section>
-
+        </div>
     </main>
 
     <script>
