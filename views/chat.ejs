@@ -3,6 +3,8 @@
 <head>
     <%- include('section/head') %>
     <title>對話中 - Wu Jo</title>
+    <!-- 🟢 引入 Socket.io 官方前端客戶端 Client 端 -->
+    <script src="/socket.io/socket.io.js"></script>
     <style>
         /* ==========================================
            全純 CSS 控制，完全不依賴任何 Tailwind
@@ -17,22 +19,26 @@
         body {
             background-color: #FAFAFA !important; /* Wu Jo 清爽白底 */
             color: #333333 !important;
-            padding-bottom: 100px; /* 留空間給底部的輸入欄 */
+            padding-bottom: 110px; /* 留充足空間給底部的輸入欄，避免最後一條訊息被遮擋 */
         }
 
-        /* 頂部聊天對象導覽列 */
+        /* 頂部聊天對象導覽列 - 修正桌機版寬度無限延伸的問題 */
         .chat-header-bar {
             position: fixed;
-            top: 70px; /* 避開頂部主導覽列 */
-            left: 0;
-            right: 0;
+            top: 60px; /* 完美避開頂部主導覽列高度 */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 650px; /* 拉齊 Wu Jo 新版標準對話舒適寬度 */
             height: 60px;
-            background-color: #FFFFFF;
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px); /* 增加高級毛玻璃感 */
             border-bottom: 1px solid #EFEFEF;
             display: flex;
             align-items: center;
             padding: 0 20px;
-            z-index: 99;
+            z-index: 98;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
         }
 
         .back-btn {
@@ -41,15 +47,20 @@
             font-weight: bold;
             margin-right: 16px;
             font-size: 14px;
+            transition: opacity 0.2s;
         }
 
-        /* ❌ 就是這裡！嚴格限制頭貼大小，絕對不會再塞滿螢幕 */
+        .back-btn:hover {
+            opacity: 0.7;
+        }
+
         .chat-target-avatar {
-            width: 36px;
-            height: 36px;
+            width: 38px;
+            height: 38px;
             border-radius: 50%;
             background-color: #FAFAFA;
-            border: 2px solid #F5EFEA;
+            border: 2px solid #FFFFFF;
+            box-shadow: 0 2px 6px rgba(130, 58, 0, 0.15);
             margin-right: 12px;
             object-fit: cover;
         }
@@ -62,9 +73,9 @@
 
         /* 聊天泡泡主容器 */
         .chat-main-container {
-            max-width: 480px;
+            max-width: 650px;
             margin: 0 auto;
-            padding: 150px 20px 100px 20px; /* 上方留空給兩個 header */
+            padding: 140px 20px 20px 20px; /* 上方精準預留空間給雙階 Header */
             display: flex;
             flex-direction: column;
             gap: 16px;
@@ -87,16 +98,17 @@
         }
 
         .bubble {
-            max-width: 70%;
-            padding: 12px 16px;
+            max-width: 75%;
+            padding: 12px 18px;
             border-radius: 20px;
             font-size: 14px;
-            line-height: 1.5;
+            line-height: 1.6;
             word-break: break-all;
             box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            font-weight: 500;
         }
 
-        /* 他人泡泡：灰色底 */
+        /* 他人泡泡：純白底細緻灰框 */
         .received .bubble {
             background-color: #FFFFFF;
             color: #333333;
@@ -104,63 +116,75 @@
             border-top-left-radius: 4px;
         }
 
-        /* 自己泡泡：Wu Jo 焦糖金棕底 */
+        /* 自己泡泡：Wu Jo 質感漸層焦糖棕 */
         .sent .bubble {
             background: linear-gradient(135deg, #B37A48 0%, #823A00 100%);
             color: #FFFFFF;
             border-top-right-radius: 4px;
+            box-shadow: 0 4px 12px rgba(130, 58, 0, 0.15);
         }
 
-        /* 底部對話輸入欄 */
+        /* 底部對話輸入欄外層 - 修正桌機版寬度爆炸問題 */
         .chat-input-wrapper {
             position: fixed;
-            bottom: 70px; /* 避開最底下的分頁選單 */
-            left: 0;
-            right: 0;
-            background-color: #FFFFFF;
+            bottom: 60px; /* 避開最底部的系統導覽分頁欄 */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 650px;
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
             border-top: 1px solid #EFEFEF;
             padding: 12px 20px;
-            z-index: 99;
+            z-index: 98;
         }
 
         .chat-input-container {
-            max-width: 440px;
-            margin: 0 auto;
             display: flex;
             gap: 12px;
+            width: 100%;
         }
 
         .message-input {
             flex: 1;
-            height: 40px;
-            border-radius: 20px;
+            height: 44px;
+            border-radius: 22px;
             border: 1px solid #EFEFEF;
             background-color: #FAFAFA;
-            padding: 0 16px;
+            padding: 0 18px;
             font-size: 14px;
             outline: none;
-            transition: border-color 0.2s;
+            transition: all 0.2s ease;
+            font-weight: 500;
         }
 
         .message-input:focus {
             border-color: #B37A48;
+            background-color: #FFFFFF;
+            box-shadow: 0 0 0 3px rgba(179, 122, 72, 0.1);
         }
 
         .send-btn {
-            height: 40px;
-            padding: 0 20px;
-            border-radius: 20px;
+            height: 44px;
+            padding: 0 22px;
+            border-radius: 22px;
             border: none;
             background-color: #823A00;
             color: #FFFFFF;
-            font-weight: bold;
+            font-weight: 800;
             font-size: 14px;
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 10px rgba(130, 58, 0, 0.2);
         }
 
         .send-btn:hover {
             background-color: #632C00;
+            transform: translateY(-1px);
+        }
+
+        .send-btn:active {
+            transform: translateY(0);
         }
     </style>
 </head>
@@ -168,40 +192,127 @@
 
     <%- include('section/nav') %>
 
+    <!-- 頂部對話目標固定欄 (桌機版自動置中收合至 650px) -->
     <div class="chat-header-bar">
         <a href="/messages" class="back-btn">← 返回</a>
-        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= chatTarget.avatar %>" class="chat-target-avatar" alt="avatar">
-        <span class="chat-target-name"><%= chatTarget.name %></span>
+        
+        <a href="/profile/<%= chatTarget.name %>" style="display: flex; align-items: center; text-decoration: none; color: inherit;">
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= chatTarget.avatar %>" class="chat-target-avatar" alt="使用者頭像">
+            <span class="chat-target-name"><%= chatTarget.name %></span>
+        </a>
+        
+        <a href="/blacklist?target=<%= chatTarget.name %>" style="margin-left: auto; color: #B37A48; font-size: 13px; font-weight: 700; text-decoration: none;">檢舉</a>
     </div>
 
-    <main class="chat-main-container">
+    <!-- 聊天主容器 -->
+    <main class="chat-main-container" id="chatContainer">
         
-        <div class="message-row received">
-            <div class="bubble">
-                嗨！請問這週二晚上你有空一起在 Kinetics Studio 練舞嗎？
+        <!-- 歷史訊息串接與渲染 -->
+        <% if (locals.messages && messages.length > 0) { %>
+            <% messages.forEach(function(msg) { %>
+                <div class="message-row <%= msg.senderId === user.id ? 'sent' : 'received' %>">
+                    <div class="bubble"><%= msg.text %></div>
+                </div>
+            <% }); %>
+        <% } else { %>
+            <!-- 預設隨機 Mock 資料（若無對話時之防禦呈現） -->
+            <div class="message-row received">
+                <div class="bubble">嗨！請問這週二晚上你有空一起在 Kinetics Studio 練舞嗎？</div>
             </div>
-        </div>
-
-        <div class="message-row sent">
-            <div class="bubble">
-                有空啊！我要練 Popping，你那天打算練什麼舞風？
+            <div class="message-row sent">
+                <div class="bubble">有空啊！我要練 Popping，你那天打算練什麼舞風？</div>
             </div>
-        </div>
-
-        <div class="message-row received">
-            <div class="bubble">
-                太好了，我想抓一下 House 的基礎律動，到時候教室見！
-            </div>
-        </div>
+        <% } %>
 
     </main>
 
+    <!-- 底部輸入區塊 (桌機版自動置中收合至 650px) -->
     <div class="chat-input-wrapper">
         <div class="chat-input-container">
-            <input type="text" class="message-input" placeholder="輸入訊息...">
-            <button class="send-btn">傳送</button>
+            <input type="text" id="msgInput" class="message-input" placeholder="輸入訊息..." autocomplete="off">
+            <button id="sendBtn" class="send-btn">傳送</button>
         </div>
     </div>
 
+    <!-- 前端即時 WebSocket 通信邏輯 -->
+    <script>
+        // 1. 初始化 Socket 連線
+        const socket = io();
+
+        // 2. 獲取 DOM 節點
+        const chatContainer = document.getElementById('chatContainer');
+        const msgInput = document.getElementById('msgInput');
+        const sendBtn = document.getElementById('sendBtn');
+
+        // 獲取由 EJS 注入的動態參數
+        const currentUserId = "<%= user.id %>"; 
+        const targetUserId = "<%= chatTarget.id %>";
+        
+        // 算出唯一的聊天房間 ID 
+        const roomId = [currentUserId, targetUserId].sort().join('_');
+
+        // 3. 加入房間並自動滾動至底部
+        socket.emit('join_room', { roomId: roomId, userId: currentUserId });
+        scrollToBottom();
+
+        // 4. 發送訊息邏輯
+        function sendMessage() {
+            const text = msgInput.value.trim();
+            if (!text) return;
+
+            const messageData = {
+                roomId: roomId,
+                senderId: currentUserId,
+                receiverId: targetUserId,
+                text: text
+            };
+
+            // 透過 Socket 發送給後端
+            socket.emit('send_message', messageData);
+
+            // 當前畫面即時繪製發送泡泡
+            appendMessage(text, 'sent');
+            
+            msgInput.value = '';
+            scrollToBottom();
+        }
+
+        // 5. 監聽新訊息接收事件
+        socket.on('receive_message', (data) => {
+            if (data.senderId !== currentUserId) {
+                appendMessage(data.text, 'received');
+                scrollToBottom();
+            }
+        });
+
+        // 輔助函式：動態新增訊息泡泡 (安全注入防範 XSS)
+        function appendMessage(text, type) {
+            const row = document.createElement('div');
+            row.classList.add('message-row', type);
+
+            const bubble = document.createElement('div');
+            bubble.classList.add('bubble');
+            bubble.textContent = text; 
+
+            row.appendChild(bubble);
+            chatContainer.appendChild(row);
+        }
+
+        // 輔助函式：自動滑動至聊天最底端
+        function scrollToBottom() {
+            window.scrollTo({
+                top: document.body.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+
+        // 6. 事件處理監聽
+        sendBtn.addEventListener('click', sendMessage);
+        msgInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
 </body>
 </html>
