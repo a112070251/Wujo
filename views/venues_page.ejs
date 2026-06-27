@@ -11,18 +11,18 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
 
         body {
-            background-color: #FFFFFF !important; /* 大底色純白 */
-            color: #000000 !important; /* 文字純黑 */
-            padding-bottom: 120px; /* 留給底部導覽列空間 */
+            background-color: #FAFAFA !important; /* 同步 Wu Jo 清爽底色 */
+            color: #333333 !important;
         }
 
-        .venues-container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 80px 16px 20px 16px; /* 避開頂部固定導覽列 */
+        /* 🟢 核心排版：完全看齊其他高質感頁面的留空大小與響應式容器 */
+        .main-content {
+            padding-top: 20px;
+            padding-bottom: 90px;
         }
 
         /* 頁面標頭 */
@@ -31,40 +31,40 @@
         }
 
         .page-title {
-            font-size: 28px;
+            font-size: 22px;
             font-weight: 900;
-            color: #823A00; /* 焦糖棕主色 */
-            letter-spacing: 1px;
+            color: #222222;
+            letter-spacing: 0.5px;
         }
 
         /* 🚫 存取受限區塊 */
         .restricted-card {
             background-color: #FFF5F5;
-            border: 1px solid #FFCDD2;
-            border-radius: 28px;
-            padding: 40px 24px;
+            border: 1px solid #FFD8D8;
+            border-radius: 20px; /* 完美同步 20px 圓角 */
+            padding: 36px 24px;
             text-align: center;
-            margin: 32px 0;
-            box-shadow: 0 4px 15px rgba(211, 47, 47, 0.03);
+            margin: 24px 0;
+            box-shadow: 0 4px 12px rgba(211, 47, 47, 0.02);
         }
 
         .restricted-icon {
-            font-size: 56px;
-            margin-bottom: 16px;
+            font-size: 48px;
+            margin-bottom: 12px;
         }
 
         .restricted-title {
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 900;
             color: #D32F2F;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
 
         .restricted-text {
             font-size: 14px;
             color: #555555;
             line-height: 1.6;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
         .btn-row-center {
@@ -75,13 +75,19 @@
 
         .btn-check-credit {
             background-color: #FFFFFF;
-            color: #B37A48 !important;
-            border: 1px solid #DDDDDD;
+            color: #823A00 !important; /* 修正為系統主色 */
+            border: 1px solid #EFEFEF;
             padding: 10px 20px;
             border-radius: 12px;
             font-size: 13px;
             font-weight: 700;
             text-decoration: none;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+            transition: background-color 0.2s;
+        }
+
+        .btn-check-credit:hover {
+            background-color: #FAFAFA;
         }
 
         .btn-submit-appeal {
@@ -93,72 +99,54 @@
             font-size: 13px;
             font-weight: 700;
             cursor: pointer;
+            transition: opacity 0.2s;
         }
 
-        /* 定位地圖模擬區塊 */
+        .btn-submit-appeal:hover {
+            opacity: 0.9;
+        }
+
+        /* 📍 定位推薦區塊 */
         .map-placeholder-box {
             margin-bottom: 24px;
-            border-radius: 24px;
+            border-radius: 20px;
             overflow: hidden;
-            border: 1px solid #DDDDDD;
-            height: 140px;
+            border: 1px solid #EFEFEF;
             position: relative;
-            background-color: #EFEFEF;
+            background-color: #FFFFFF !important; /* 改為純白卡片底 */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
         }
 
         .map-loading-text {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             font-size: 13px;
-            color: #B37A48; 
-            font-weight: 500;
+            color: #823A00; 
+            font-weight: 700;
         }
 
-        .map-ping-dot {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-
-        .ping-wave {
-            width: 14px;
-            height: 14px;
-            background-color: #CC8C53; 
-            border-radius: 50%;
-            position: absolute;
-            animation: map-ping-animation 1.5s ease-out infinite;
-        }
-
-        .ping-center {
-            width: 12px;
-            height: 12px;
-            background-color: #CC8C53;
-            border-radius: 50%;
-            border: 2px solid #FFFFFF;
-            position: relative;
-        }
-
-        @keyframes map-ping-animation {
-            0% { transform: scale(1); opacity: 0.8; }
-            100% { transform: scale(3); opacity: 0; }
+        /* 推薦結果卡片內部優化 */
+        .recommend-result-card {
+            background: #FFFFFF; 
+            border-radius: 14px; 
+            padding: 16px; 
+            border: 1px solid rgba(130, 58, 0, 0.15); 
+            text-align: left;
+            background-image: linear-gradient(135deg, rgba(130, 58, 0, 0.02) 0%, rgba(255,255,255,0) 100%);
         }
 
         /* 🧮 費用分攤計算器 */
         .calculator-card {
-            background-color: #EFEFEF; 
+            background-color: #FFFFFF; /* 改為高質感純白底 */
+            border: 1px solid #EFEFEF;
             padding: 24px;
-            border-radius: 28px;
+            border-radius: 20px;
             margin-bottom: 32px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
         }
 
         .calculator-title {
             font-size: 16px;
             font-weight: 900;
-            color: #653600; 
+            color: #222222; 
             margin-bottom: 16px;
             display: flex;
             align-items: center;
@@ -174,18 +162,24 @@
 
         .calc-input-field {
             width: 100%;
-            background-color: #FFFFFF;
-            border: 1px solid #DDDDDD;
-            border-radius: 14px;
+            background-color: #FAFAFA;
+            border: 1px solid #EFEFEF;
+            border-radius: 12px;
             padding: 12px 16px;
             font-size: 14px;
             outline: none;
+            transition: all 0.2s;
+        }
+
+        .calc-input-field:focus {
+            border-color: #823A00;
+            background-color: #FFFFFF;
         }
 
         .calc-result-panel {
-            background-color: #FFFFFF;
-            border: 1px solid #E0E0E0;
-            border-radius: 16px;
+            background-color: rgba(130, 58, 0, 0.03); /* 淡主色調底色 */
+            border: 1px dashed rgba(130, 58, 0, 0.2);
+            border-radius: 14px;
             padding: 14px;
             text-align: center;
             margin-bottom: 16px;
@@ -193,7 +187,7 @@
 
         .calc-result-label {
             font-size: 11px;
-            color: #B37A48;
+            color: #666666;
             font-weight: 700;
             margin-bottom: 2px;
         }
@@ -201,7 +195,7 @@
         .calc-result-amount {
             font-size: 26px;
             font-weight: 900;
-            color: #823A00; 
+            color: #823A00; /* 焦糖棕主色展示金額 */
         }
 
         .btn-linepay-action {
@@ -210,10 +204,15 @@
             color: #FFFFFF;
             border: none;
             padding: 14px 0;
-            border-radius: 14px;
+            border-radius: 12px;
             font-size: 15px;
             font-weight: 700;
             cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn-linepay-action:hover {
+            opacity: 0.95;
         }
 
         .hidden {
@@ -238,57 +237,74 @@
 
     <%- include('section/nav') %>
 
-    <main class="venues-container">
-        
-        <header class="page-header">
-            <h1 class="page-title">找教室</h1>
-        </header>
-
-        <% let currentReports = (locals.user && user.reports) ? user.reports : 0; %>
-
-        <% if (currentReports >= 5) { %>
-            <div class="restricted-card">
-                <div class="restricted-icon">🚫</div>
-                <h3 class="restricted-title">存取受限</h3>
-                <p class="restricted-text">
-                    由於您的帳號被檢舉次數過高 (<%= currentReports %> 次)，<br>
-                    為了維護社群安全，您的教室預訂功能已被暫時封鎖。
-                </p>
-                <div class="btn-row-center">
-                    <a href="/me" class="btn-check-credit">查看信用狀態</a>
-                    <button onclick="alert('申訴已受理，請等候 1-3 個工作天')" class="btn-submit-appeal">提交申訴</button>
-                </div>
-            </div>
-        <% } else { %>
+    <!-- 主體內容區 (套用標準大容器，寬度完美與找攝影對齊) -->
+    <main class="main-content">
+        <div class="container">
             
-            <div class="map-placeholder-box">
-                <div class="map-loading-text">📍 正在抓取您的位置...</div>
-                <div class="map-ping-dot">
-                    <div class="ping-wave"></div>
-                    <div class="ping-center"></div>
-                </div>
-            </div>
+            <header class="page-header">
+                <h1 class="page-title">找教室</h1>
+            </header>
 
-            <div class="calculator-card">
-                <h3 class="calculator-title"><span>🧮</span> Share - 費用分攤支付</h3>
-                <div class="calculator-inputs-grid">
-                    <input type="number" id="totalPrice" placeholder="場地總費 $" class="calc-input-field">
-                    <input type="number" id="peopleCount" placeholder="分攤人數" class="calc-input-field">
+            <% let currentReports = (locals.user && user.reports) ? user.reports : 0; %>
+
+            <% if (currentReports >= 5) { %>
+                <div class="restricted-card">
+                    <div class="restricted-icon">🚫</div>
+                    <h3 class="restricted-title">存取受限</h3>
+                    <p class="restricted-text">
+                        由於您的帳號被檢舉次數過高 (<%= currentReports %> 次)，<br>
+                        為了維護社群安全，您的教室預訂功能已被暫時封鎖。
+                    </p>
+                    <div class="btn-row-center">
+                        <a href="/me" class="btn-check-credit">查看信用狀態</a>
+                        <button onclick="alert('申訴已受理，請等候 1-3 個工作天')" class="btn-submit-appeal">提交申訴</button>
+                    </div>
                 </div>
-                <div class="calc-result-panel">
-                    <p class="calc-result-label">每人應付</p>
-                    <p class="calc-result-amount">$ <span id="result">0</span></p>
+            <% } else { %>
+                
+                <!-- 頂部定位與推薦區 -->
+                <div class="map-placeholder-box" id="mapBox" style="padding: 20px;">
+                    <div id="mapStatus" class="map-loading-text" style="text-align: center; margin-bottom: 10px;">
+                        📍 正在要求定位權限以計算最近教室...
+                    </div>
+                    <div id="nearestResult" class="hidden recommend-result-card">
+                        <p style="font-size: 12px; color: #823A00; font-weight: bold; margin-bottom: 4px;">🎯 系統推薦：離您最近的教室</p>
+                        <h4 id="nearName" style="font-size: 16px; font-weight: 900; color: #222222;"></h4>
+                        <p style="font-size: 13px; margin: 6px 0; color: #555555;">
+                            距離：<span id="nearDist" style="color: #D32F2F; font-weight: bold;"></span> 公里 
+                            <span style="color: #DDD; margin: 0 6px;">|</span> 
+                            價格：<span style="color: #823A00; font-weight: bold;">$<span id="nearPrice"></span></span> / hr
+                        </p>
+                        <a id="nearLink" href="#" style="display: inline-block; margin-top: 4px; font-size: 13px; color: #06C755; text-decoration: none; font-weight: bold;">👉 前往查看教室詳情</a>
+                    </div>
                 </div>
-                <div id="paySection" class="hidden">
-                    <button onclick="alert('模擬支付成功！')" class="btn-linepay-action">使用 LINE Pay 支付</button>
+
+                <!-- 費用分攤計算器 -->
+                <div class="calculator-card">
+                    <h3 class="calculator-title">
+                        <span style="color: #823A00;">🧮</span> Share - 費用分攤支付
+                    </h3>
+                    <div class="calculator-inputs-grid">
+                        <input type="number" id="totalPrice" placeholder="場地總費用 $" class="calc-input-field">
+                        <input type="number" id="peopleCount" placeholder="分攤人數" class="calc-input-field">
+                    </div>
+                    <div class="calc-result-panel">
+                        <p class="calc-result-label">每人應付</p>
+                        <p class="calc-result-amount">$ <span id="result">0</span></p>
+                    </div>
+                    <div id="paySection" class="hidden">
+                        <button onclick="alert('模擬支付成功！')" class="btn-linepay-action">使用 LINE Pay 支付</button>
+                    </div>
                 </div>
-            </div>
+                
+                <!-- 教室列表格 -->
+                <div class="venues-grid-layout">
+                    <%- include('section/venues') %>
+                </div>
+
+            <% } %>
             
-            <div class="venues-grid-layout">
-                <%- include('section/venues') %>
-            </div>
-
-        <% } %>
+        </div>
     </main>
 
     <script>
@@ -308,6 +324,40 @@
             }
             p.oninput = calculate;
             n.oninput = calculate;
+        }
+
+        // 定位功能與原有的 Fetch 修正（移除原本重複多寫的 fetch）
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    document.getElementById('mapStatus').innerText = `📍 定位成功！正在搜尋最近場館...`;
+                    
+                    fetch(`/api/nearest-venue?lat=${lat}&lng=${lng}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.nearestRoom) {
+                                const room = data.nearestRoom;
+                                document.getElementById('mapStatus').innerHTML = `✅ 已成功為您尋找最近教室！`;
+                                document.getElementById('nearName').innerText = room.name;
+                                document.getElementById('nearDist').innerText = room.distance;
+                                document.getElementById('nearPrice').innerText = room.price;
+                                document.getElementById('nearLink').href = `/venues/${room.id}`;
+                                document.getElementById('nearestResult').classList.remove('hidden');
+                            }
+                        })
+                        .catch(err => {
+                            document.getElementById('mapStatus').innerText = `❌ 計算失敗，請重新整理`;
+                        });
+                },
+                (error) => {
+                    document.getElementById('mapStatus').innerText = `🔒 瀏覽器拒絕定位權限，顯示預設教室列表。`;
+                }
+            );
+        } else {
+            document.getElementById('mapStatus').innerText = `❌ 您的瀏覽器不支援 GPS 定位功能`;
         }
     </script>
 </body>
