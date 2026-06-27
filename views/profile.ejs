@@ -12,59 +12,63 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
 
         body {
-            background-color: #FFFFFF !important; /* 大底色純白 */
-            color: #000000 !important; /* 文字純黑 */
-            padding-bottom: 120px; /* 留給底部選單的空間 */
+            background-color: #FAFAFA !important; 
+            color: #000000 !important;
         }
 
-        .profile-container {
-            max-width: 480px; /* 控制個人名片寬度 */
-            margin: 0 auto;
-            padding: 80px 16px 20px 16px; /* pt-80 完美避開頂部固定導覽列 */
+        .main-content {
+            padding-top: 20px;
+            padding-bottom: 90px;
         }
 
-        /* 1. 返回按鈕 */
         .btn-back-row {
-            background: none;
-            border: none;
-            color: #B37A48; /* 自己不在選單的色票 */
+            color: #B37A48;
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 700;
             cursor: pointer;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 6px;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
             text-decoration: none;
             transition: color 0.2s ease;
         }
 
         .btn-back-row:hover {
-            color: #653600;
+            color: #823A00;
         }
 
-        /* 2. 個人卡片主體 */
-        .profile-card {
-            background-color: #EFEFEF; /* 區塊底色#EFEFEF */
-            border-radius: 32px;
+        /* 個人名片響應式網格 */
+        .profile-layout-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+
+        @media (min-width: 768px) {
+            .profile-layout-grid {
+                grid-template-columns: 280px 1fr; 
+            }
+        }
+
+        /* 左側欄：核心個人名片 */
+        .profile-side-card {
+            background-color: #EFEFEF; 
+            border-radius: 28px;
             padding: 32px 24px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-            position: relative;
-        }
-
-        /* 3. 頭像與名字區塊 */
-        .profile-avatar-wrapper {
             text-align: center;
-            margin-bottom: 24px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+            height: fit-content;
         }
 
         .avatar-container {
             position: relative;
             display: inline-block;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
         }
 
         .profile-img {
@@ -73,11 +77,11 @@
             border-radius: 50%;
             border: 4px solid #FFFFFF;
             background-color: #E0E0E0;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 12px rgba(130, 58, 0, 0.12);
             display: block;
+            object-fit: cover;
         }
 
-        /* 異常警示標籤 */
         .badge-danger {
             position: absolute;
             bottom: 4px;
@@ -101,66 +105,68 @@
         .user-name {
             font-size: 24px;
             font-weight: 900;
-            color: #000000;
+            color: #111111;
+            margin-bottom: 4px;
         }
 
         .dance-type-tag {
             font-size: 14px;
-            font-weight: 700;
-            color: #CC8C53; /* 強調色/功能按鈕 */
-            margin-top: 4px;
+            font-weight: 800;
+            color: #CC8C53; 
         }
 
-        /* 4. 內文資料區塊 */
-        .info-group {
+        /* 右側欄：詳細舞者資料 */
+        .profile-info-content {
             display: flex;
             flex-direction: column;
             gap: 16px;
-            margin-top: 28px;
         }
 
         .info-box {
-            background-color: #FFFFFF; /* 卡片內部方塊轉為純白 */
-            padding: 16px 20px;
-            border-radius: 20px;
-            border: 1px solid rgba(0,0,0,0.02);
+            background-color: #FFFFFF; 
+            padding: 24px;
+            border-radius: 24px;
+            border: 1px solid #EFEFEF;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.01);
         }
 
         .info-label {
-            font-size: 10px;
-            font-weight: 700;
+            font-size: 11px;
+            font-weight: 800;
             color: #B37A48;
             letter-spacing: 2px;
             text-transform: uppercase;
+            display: block;
+            margin-bottom: 12px;
         }
 
         .intro-text {
             font-size: 14px;
-            color: #333333;
-            margin-top: 8px;
-            line-height: 1.6;
+            color: #444444;
+            line-height: 1.7;
             font-style: italic;
+            font-weight: 500;
         }
 
-        /* 信用紀錄特殊側邊條 */
+        /* 信用紀錄 */
         .credit-box {
-            border-left: 5px solid #2E7D32; /* 正常時綠色 */
+            border-left: 5px solid #2E7D32; 
         }
         
         .credit-box.alert-mode {
-            border-left: 5px solid #D32F2F; /* 異常時紅色 */
+            border-left: 5px solid #D32F2F; 
         }
 
         .credit-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 6px;
         }
 
         .credit-title {
             font-size: 14px;
             color: #333333;
+            font-weight: 700;
         }
 
         .credit-count {
@@ -171,25 +177,85 @@
         .text-green { color: #2E7D32; }
         .text-red { color: #D32F2F; }
 
-        /* 5. 按鈕控制列 */
+        /* 🟢 評價歷史專屬樣式 */
+        .review-item {
+            border-bottom: 1px solid #F5F5F5;
+            padding: 16px 0;
+        }
+
+        .review-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .review-item:first-child {
+            padding-top: 0;
+        }
+
+        .review-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .reviewer-name {
+            font-size: 13px;
+            font-weight: 800;
+            color: #555555;
+        }
+
+        .review-rating {
+            color: #FFB300; /* 星星金黃色 */
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .review-comment {
+            font-size: 13px;
+            color: #666666;
+            line-height: 1.5;
+            font-weight: 500;
+        }
+
+        .no-review-text {
+            font-size: 13px;
+            color: #999999;
+            text-align: center;
+            padding: 12px 0;
+            font-style: italic;
+        }
+
+        /* 按鈕控制列 */
+        .action-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
         .action-row-main {
             display: flex;
             gap: 12px;
-            margin-top: 28px;
         }
 
         .btn-primary-dm {
             flex: 2;
-            background-color: #823A00; /* 左上角系統名稱主色 */
+            background-color: #823A00;
             color: #FFFFFF !important;
             text-align: center;
             padding: 14px 0;
             border-radius: 16px;
-            font-weight: 700;
+            font-weight: 800;
             font-size: 15px;
             text-decoration: none;
             box-shadow: 0 4px 12px rgba(130, 58, 0, 0.15);
-            transition: transform 0.1s ease;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary-dm:hover {
+            background-color: #653600;
+            transform: translateY(-1px);
         }
 
         .btn-secondary-report {
@@ -200,7 +266,7 @@
             text-align: center;
             padding: 14px 0;
             border-radius: 16px;
-            font-weight: 700;
+            font-weight: 800;
             font-size: 14px;
             text-decoration: none;
             transition: all 0.2s ease;
@@ -212,26 +278,27 @@
             border-color: #FFCDD2;
         }
 
-        .action-row-full {
-            margin-top: 12px;
-        }
-
         .btn-accent-review {
             display: block;
-            background-color: #CC8C53; /* 強調色/功能按鈕 */
+            background-color: #CC8C53;
             color: #FFFFFF !important;
             text-align: center;
             padding: 14px 0;
             border-radius: 16px;
-            font-weight: 700;
+            font-weight: 800;
             font-size: 14px;
             text-decoration: none;
             box-shadow: 0 4px 12px rgba(204, 140, 83, 0.15);
-            transition: transform 0.1s ease;
+            transition: all 0.2s ease;
+        }
+
+        .btn-accent-review:hover {
+            background-color: #B37A48;
+            transform: translateY(-1px);
         }
 
         .btn-primary-dm:active, .btn-accent-review:active, .btn-secondary-report:active {
-            transform: scale(0.97);
+            transform: scale(0.98);
         }
     </style>
 </head>
@@ -239,53 +306,82 @@
 
     <%- include('section/nav') %>
 
-    <div class="profile-container">
-        
-        <a href="javascript:history.back()" class="btn-back-row">
-            <span>←</span> 返回
-        </a>
-
-        <div class="profile-card">
+    <main class="main-content">
+        <div class="container">
             
-            <div class="profile-avatar-wrapper">
-                <div class="avatar-container">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= profile.avatar %>" class="profile-img" alt="頭像">
-                    <% if (profile.reportCount >= 4) { %>
-                        <span class="badge-danger">異常</span>
-                    <% } %>
-                </div>
-                <h1 class="user-name"><%= profile.name %></h1>
-                <p class="dance-type-tag"><%= profile.danceType %></p>
-            </div>
+            <a href="javascript:history.back()" class="btn-back-row">
+                <span>←</span> 返回
+            </a>
 
-            <div class="info-group">
-                <div class="info-box">
-                    <label class="info-label">個人介紹</label>
-                    <p class="intro-text">"<%= profile.intro %>"</p>
-                </div>
+            <div class="profile-layout-grid">
+                
+                <!-- 左側欄：核心個人名片 -->
+                <div class="profile-side-card">
+                    <div class="profile-avatar-wrapper">
+                        <div class="avatar-container">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= profile.avatar %>" class="profile-img" alt="舞者頭像">
+                            <% if (profile.reportCount >= 4) { %>
+                                <span class="badge-danger">異常</span>
+                            <% } %>
+                        </div>
+                        <h1 class="user-name"><%= profile.name %></h1>
+                        <p class="dance-type-tag">🕺 <%= profile.danceType %></p>
+                    </div>
 
-                <div class="info-box credit-box <%= profile.reportCount >= 4 ? 'alert-mode' : '' %>">
-                    <label class="info-label">信用紀錄</label>
-                    <div class="credit-row">
-                        <span class="credit-title">累計檢舉次數</span>
-                        <span class="credit-count <%= profile.reportCount >= 4 ? 'text-red' : 'text-green' %>">
-                            <%= profile.reportCount %> 次
-                        </span>
+                    <div class="action-group">
+                        <div class="action-row-main">
+                            <a href="/chat/<%= profile.name %>" class="btn-primary-dm">立即私訊</a>
+                            <a href="/blacklist?target=<%= profile.name %>" class="btn-secondary-report">檢舉</a>
+                        </div>
+                        <a href="/review?target=<%= profile.name %>" class="btn-accent-review">評價夥伴</a>
                     </div>
                 </div>
+
+                <!-- 右側欄：詳細舞者資料與新加入的評價清單 -->
+                <div class="profile-info-content">
+                    
+                    <div class="info-box">
+                        <label class="info-label">✨ 個人介紹</label>
+                        <p class="intro-text">"<%= profile.intro %>"</p>
+                    </div>
+
+                    <div class="info-box credit-box <%= profile.reportCount >= 4 ? 'alert-mode' : '' %>">
+                        <label class="info-label">🛡️ 信用紀錄</label>
+                        <div class="credit-row">
+                            <span class="credit-title">累計被檢舉次數</span>
+                            <span class="credit-count <%= profile.reportCount >= 4 ? 'text-red' : 'text-green' %>">
+                                <%= profile.reportCount %> 次
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 🟢 核心功能：夥伴評價紀錄（自己與他人都看得到） -->
+                    <div class="info-box">
+                        <label class="info-label">💬 舞者夥伴評價</label>
+                        <div class="reviews-list">
+                            <% if (locals.reviews && reviews.length > 0) { %>
+                                <% reviews.forEach(function(review) { %>
+                                    <div class="review-item">
+                                        <div class="review-meta">
+                                            <span class="reviewer-name">來自 @<%= review.reviewer %> 的評價</span>
+                                            <span class="review-rating">★ <%= review.rating %> / 5</span>
+                                        </div>
+                                        <p class="review-comment"><%= review.comment %></p>
+                                    </div>
+                                <% }); %>
+                            <% } else { %>
+                                <!-- 歷史尚無評價時的防禦提示 -->
+                                <p class="no-review-text">目前尚無夥伴留下評價，一起約練來累積好評吧！</p>
+                            <% } %>
+                        </div>
+                    </div>
+
+                </div>
+
             </div>
 
-            <div class="action-row-main">
-                <a href="/chat/<%= profile.name %>" class="btn-primary-dm">立即私訊</a>
-                <a href="/blacklist?target=<%= profile.name %>" class="btn-secondary-report">檢舉</a>
-            </div>
-
-            <div class="action-row-full">
-                <a href="/review?target=<%= profile.name %>" class="btn-accent-review">評價夥伴</a>
-            </div>
-            
         </div>
-    </div>
+    </main>
 
 </body>
 </html>
