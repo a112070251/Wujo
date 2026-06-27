@@ -5,7 +5,7 @@
     <title>我的訊息 - Wu Jo</title>
     <style>
         /* ==========================================
-           全純 CSS 控制，完全不依賴任何 Tailwind
+           我的訊息列表頁專屬純 CSS 樣式
            ========================================== */
         * {
             box-sizing: border-box;
@@ -15,54 +15,63 @@
         }
 
         body {
-            background-color: #FAFAFA !important; /* Wu Jo 清爽白底 */
+            background-color: #FAFAFA !important; /* Wu Jo 清爽底色 */
             color: #333333 !important;
-            padding-bottom: 120px;
         }
 
-        .main-container {
-            max-width: 480px; /* 統一與個人檔案相同的黃金手機寬度 */
-            margin: 0 auto;
-            padding: 80px 20px 20px 20px;
+        /* 🟢 核心排版：完全看齊其他高質感頁面的留空大小與響應式大容器 */
+        .main-content {
+            padding-top: 20px;
+            padding-bottom: 90px;
+        }
+
+        .page-header {
+            margin-bottom: 24px;
         }
 
         .page-title {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 900;
-            color: #111111;
-            margin-bottom: 24px;
-            padding-left: 4px;
+            color: #222222;
+            letter-spacing: 0.5px;
         }
 
-        /* 聊天列表容器 */
-        .chat-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+        /* 💬 響應式聊天列表佈局：手機維持單排，電腦版自動切換高質感雙排 */
+        .chat-list-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
         }
 
-        /* 單個對話卡片 */
+        @media (min-width: 768px) {
+            .chat-list-grid {
+                grid-template-columns: 1fr 1fr; /* 桌機呈現大氣的雙排排版 */
+            }
+        }
+
+        /* 單個對話卡片優化 */
         .chat-item {
             display: flex;
             align-items: center;
             gap: 16px;
             padding: 16px;
-            border-radius: 24px;
+            border-radius: 20px; /* 同步 Wu Jo 標準 20px 圓角 */
             background-color: #FFFFFF;
             border: 1px solid #EFEFEF;
             text-decoration: none;
             color: inherit;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.01);
-            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            transition: all 0.25s ease;
         }
 
         .chat-item:hover {
-            border-color: rgba(179, 122, 72, 0.3); /* 輕微焦糖色外框 hover */
-            transform: translateY(-1px);
+            border-color: rgba(130, 58, 0, 0.25); /* 輕微聚焦主色焦糖棕 */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(130, 58, 0, 0.05);
         }
 
         .chat-item:active {
-            transform: scale(0.98);
+            transform: scale(0.99);
         }
 
         /* 頭貼外環（同步 Wu Jo 質感漸層） */
@@ -78,7 +87,7 @@
             border-radius: 50%;
             padding: 3px;
             background: linear-gradient(135deg, #B37A48 0%, #823A00 100%);
-            box-shadow: 0 4px 12px rgba(130, 58, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(130, 58, 0, 0.12);
             overflow: hidden;
         }
 
@@ -87,7 +96,7 @@
             height: 100%;
             border-radius: 50%;
             object-fit: cover;
-            border: 2px solid #FFFFFF; /* 標準 solid，絕對不報錯 */
+            border: 2px solid #FFFFFF;
             background-color: #FAFAFA;
         }
 
@@ -98,15 +107,16 @@
             right: 2px;
             width: 12px;
             height: 12px;
-            background-color: #4CAF50; /* 健康綠 */
+            background-color: #4CAF50; 
             border: 2px solid #FFFFFF;
             border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         /* 文字內容區 */
         .chat-info {
-            flex-1: 1;
-            min-width: 0; /* 防止長文字撐破卡片 */
+            flex: 1;
+            min-width: 0; /* 防止長文字爆開撐破卡片邊界 */
         }
 
         .chat-header {
@@ -118,22 +128,24 @@
 
         .chat-name {
             font-size: 15px;
-            font-weight: 800;
+            font-weight: 900;
             color: #222222;
         }
 
         .chat-time {
             font-size: 11px;
             color: #A0A0A0;
+            font-weight: 500;
         }
 
         .chat-preview {
             font-size: 13px;
-            color: #777777;
+            color: #666666;
             white-space: nowrap;
             overflow: hidden;
-            text-overflow: ellipsis; /* 超出長度自動變 ... */
-            line-height: 1.4;
+            text-overflow: ellipsis; /* 超出長度自動變為省略號 ... */
+            line-height: 1.5;
+            font-weight: 500;
         }
     </style>
 </head>
@@ -141,32 +153,46 @@
 
     <%- include('section/nav') %>
 
-    <main class="main-container">
-        <h2 class="page-title">私訊對話</h2>
-        
-        <div class="chat-list">
-            <% chatList.forEach(chat => { %>
-                <a href="/chat/<%= chat.id %>" class="chat-item">
-                    
-                    <div class="avatar-container">
-                        <div class="chat-avatar-border">
-                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= chat.avatar %>" class="chat-avatar" alt="avatar">
-                        </div>
-                        <span class="status-dot"></span>
-                    </div>
-                    
-                    <div class="chat-info" style="flex: 1;">
-                        <div class="chat-header">
-                            <h4 class="chat-name"><%= chat.name %></h4>
-                            <span class="chat-time"><%= chat.time %></span>
-                        </div>
-                        <p class="chat-preview">
-                            <%= chat.lastMsg %>
-                        </p>
-                    </div>
+    <!-- 主體內容區 (套用大容器，寬度完美與找攝影對齊) -->
+    <main class="main-content">
+        <div class="container">
+            
+            <header class="page-header">
+                <h1 class="page-title">私訊</h1>
+            </header>
+            
+            <!-- 雙欄/單欄響應式網格 -->
+            <div class="chat-list-grid">
+                <% if (typeof chatList !== 'undefined' && chatList.length > 0) { %>
+                    <% chatList.forEach(chat => { %>
+                        <a href="/chat/<%= chat.id %>" class="chat-item">
+                            
+                            <div class="avatar-container">
+                                <div class="chat-avatar-border">
+                                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= chat.avatar %>" class="chat-avatar" alt="使用者頭像">
+                                </div>
+                                <span class="status-dot"></span>
+                            </div>
+                            
+                            <div class="chat-info">
+                                <div class="chat-header">
+                                    <h4 class="chat-name"><%= chat.name %></h4>
+                                    <span class="chat-time"><%= chat.time %></span>
+                                </div>
+                                <p class="chat-preview">
+                                    <%= chat.lastMsg %>
+                                </p>
+                            </div>
 
-                </a>
-            <% }) %>
+                        </a>
+                    <% }) %>
+                <% } else { %>
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #777; font-size: 14px; background: white; border-radius: 20px; border: 1px solid #EFEFEF;">
+                        📭 目前沒有任何私訊對話紀錄
+                    </div>
+                <% } %>
+            </div>
+
         </div>
     </main>
 
