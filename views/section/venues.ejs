@@ -1,3 +1,7 @@
+<!-- 1. 引入 Leaflet 的地圖樣式與 JS 檔案 -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <style>
     /* 教室單卡片容器 */
     .venue-card-item {
@@ -12,6 +16,7 @@
         color: #000000 !important;
         transition: transform 0.2s ease, box-shadow 0.2s ease;
         width: 100%;
+        margin-bottom: 16px; /* 增加卡片間距 */
     }
 
     .venue-card-item:hover {
@@ -99,8 +104,23 @@
         justify-content: space-between;
         align-items: center;
     }
+
+    /* 地圖容器樣式 */
+    #venue-map {
+        height: 280px;
+        width: 100%;
+        border-radius: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        border: 1px solid #EFEFEF;
+        z-index: 1; /* 防止擋到導覽列 */
+    }
 </style>
 
+<!-- 2. 在卡片最上方插入地圖區塊 -->
+<div id="venue-map"></div>
+
+<!-- 3. 原本的教室卡片列表 -->
 <% rooms.forEach((room, index) => { %>
     <a href="/venues/<%= index %>" class="venue-card-item">
         
@@ -130,3 +150,45 @@
         </div>
     </a>
 <% }) %>
+
+<!-- 4. 地圖控制邏輯 Script -->
+<script>
+    // 初始化地圖，預設中心點設在台北市中心
+    const map = L.map('venue-map').setView([25.0339, 121.5645], 13);
+
+    // 載入免費的 OpenStreetMap 地圖素材
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // 自動獲取使用者 GPS 定位，移到「最近的教室」附近
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+            const userLat = position.coords.latitude;
+            const userLng = position.coords.longitude;
+            
+            // 在地圖上標記使用者的位置
+            L.circle([userLat, userLng], {
+                color: '#823A00',      // 焦糖棕主色外圈
+                fillColor: '#CC8C53',  // 金色內圈
+                fillOpacity: 0.5,
+                radius: 100            // 半徑 100 公尺
+            }).addTo(map).bindPopup('<b>你的目前位置</b>').openPopup();
+                
+            // 將視角移到使用者周邊
+            map.setView([userLat, userLng], 14);
+        });
+    }
+
+    // 將後端傳進來的 EJS 陣列變數動態轉為前端 JavaScript 陣列
+    const roomsData = <%- JSON.stringify(rooms) %>;
+    
+    // 跑迴圈把每一間有經緯度的教室標記在地圖上
+    roomsData.forEach((room, index) => {
+        if (room.lat && room.lng) {
+            L.marker([room.lat, room.lng])
+                .addTo(map)
+                .bindPopup(`<b>${room.name}</b><br>$ ${room.price} / 小時<br><a href="/venues/${index}" style="color: #823A00; text-decoration: none; font-weight: bold;">查看教室 →</a>`);
+        }
+    });
+</script>
