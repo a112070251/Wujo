@@ -19,7 +19,7 @@
             --color-text-main: #000000;      /* 文字顏色 #000000 */
         }
 
-        /* 重設基礎樣式，強制洗掉原先的黑底 */
+        /* 重設基礎樣式 */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -30,116 +30,134 @@
         body {
             background-color: var(--color-bg-main) !important;
             color: var(--color-text-main) !important;
-            padding-bottom: 100px;
         }
 
-        .main-container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px 16px;
+        /* 🟢 核心排版：看齊高質感頁面的留空大小與響應式大容器 */
+        .main-content {
+            padding-top: 40px;
+            padding-bottom: 90px;
         }
 
         /* 1. 頂部主標題 */
         .hero-header {
             text-align: center;
-            margin-top: 40px;
             margin-bottom: 40px;
         }
 
         .hero-title {
-            font-size: 36px;
+            font-size: 38px;
             font-weight: 900;
             color: var(--color-text-main);
-            margin-bottom: 8px;
-            letter-spacing: 2px;
+            margin-bottom: 12px;
+            letter-spacing: 4px;
         }
 
         .hero-subtitle {
-            font-size: 14px;
+            font-size: 15px;
             color: var(--color-brand);
             letter-spacing: 3px;
+            font-weight: 500;
         }
 
-        /* 2. 合作教室優惠 Banner */
+        /* 2. 合作教室優惠 Banner (完美響應式大寬度) */
         .promo-banner {
             background-color: var(--color-bg-card);
             border-radius: 24px;
             overflow: hidden;
-            position: relative;
-            max-width: 550px;
             margin: 0 auto 48px auto;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
             display: block;
             text-decoration: none;
+            transition: all 0.25s ease;
+            border: 1px solid rgba(0, 0, 0, 0.02);
+            width: 100%;
+        }
+
+        .promo-banner:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(130, 58, 0, 0.08);
         }
 
         .promo-img {
             width: 100%;
             height: auto;
-            max-height: 220px;
+            max-height: 280px;
             object-fit: cover;
             display: block;
         }
 
         .promo-content {
-            padding: 20px;
-            background-color: var(--color-bg-card);
+            padding: 24px;
+            background-color: #FFFFFF; /* 改為白底襯托精緻感 */
+            border-top: 1px solid #F5F5F5;
         }
 
         .tag-row {
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
 
         .badge-sponsored {
             background-color: var(--color-brand);
             color: #FFFFFF;
-            font-size: 10px;
+            font-size: 11px;
             font-weight: bold;
-            padding: 2px 8px;
+            padding: 3px 10px;
             border-radius: 12px;
         }
 
         .venue-partner-text {
-            font-size: 12px;
+            font-size: 13px;
             color: #555555;
+            font-weight: 700;
         }
 
         .promo-headline {
             font-size: 20px;
-            font-weight: 700;
+            font-weight: 800;
             color: var(--color-text-main);
             line-height: 1.4;
+            margin-bottom: 8px;
         }
 
         .highlight-price {
             color: var(--color-brand);
-            font-size: 22px;
             font-weight: 900;
         }
 
         .promo-footer-text {
             font-size: 12px;
-            color: #777777;
-            margin-top: 6px;
+            color: #888888;
+            font-weight: 500;
         }
 
-        /* 3. 各版塊通用標題 */
+        /* 🏠 響應式網格：手機版上下堆疊，桌機自動切換為左右大氣雙欄對稱 */
+        .home-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 32px;
+        }
+
+        @media (min-width: 992px) {
+            .home-grid {
+                grid-template-columns: 1fr 1fr; /* 電腦版左右並排 */
+            }
+        }
+
+        /* 各版塊通用標題 */
         .section-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 16px;
-            max-width: 550px;
-            margin-left: auto;
-            margin-right: auto;
+            padding: 0 4px;
         }
 
         .section-title {
             font-size: 18px;
-            font-weight: 700;
+            font-weight: 800;
             color: var(--color-text-main);
         }
 
@@ -148,104 +166,138 @@
             font-size: 13px;
             font-weight: 700;
             text-decoration: none;
+            transition: color 0.2s ease;
         }
 
-        /* 4. 最新貼文卡片 */
+        .btn-view-all:hover {
+            color: var(--color-brand);
+        }
+
+        /* 3. 最新貼文卡片優化 */
         .post-card {
-            background-color: var(--color-bg-card);
+            background-color: #FFFFFF;
+            border: 1px solid #EFEFEF;
             border-radius: 24px;
-            padding: 20px;
+            padding: 24px;
             display: block;
             text-decoration: none;
             color: var(--color-text-main);
-            max-width: 550px;
-            margin: 0 auto 36px auto;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+            transition: all 0.25s ease;
+            height: calc(100% - 40px); /* 讓兩側卡片高度自動拉齊齊平 */
+        }
+
+        .post-card:hover {
+            border-color: rgba(130, 58, 0, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(130, 58, 0, 0.05);
         }
 
         .post-author-box {
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
         }
 
         .author-avatar {
-            width: 36px;
-            height: 36px;
+            width: 42px;
+            height: 42px;
             border-radius: 50%;
-            background-color: #CCCCFF;
+            border: 1px solid #EFEFEF;
+            background-color: #FAFAFA;
         }
 
         .author-name {
-            font-size: 14px;
-            font-weight: 700;
+            font-size: 15px;
+            font-weight: 800;
+            color: #222222;
         }
 
         .post-time {
             font-size: 11px;
-            color: #777777;
+            color: #999999;
+            font-weight: 500;
+            margin-top: 2px;
         }
 
         .post-body {
             font-size: 14px;
-            line-height: 1.5;
-            color: #222222;
-            margin-bottom: 12px;
+            line-height: 1.6;
+            color: #333333;
+            margin-bottom: 16px;
+            font-weight: 500;
         }
 
         .hashtag-container {
             display: flex;
+            flex-wrap: wrap;
             gap: 6px;
         }
 
         .hashtag {
             font-size: 11px;
-            background-color: rgba(130, 58, 0, 0.08);
+            background-color: rgba(130, 58, 0, 0.06);
             color: var(--color-brand);
-            padding: 2px 8px;
-            border-radius: 6px;
+            padding: 3px 10px;
+            border-radius: 8px;
+            font-weight: 700;
         }
 
-        /* 5. 推薦場地卡片 */
+        /* 4. 推薦場地卡片優化 */
         .venue-card {
-            background-color: var(--color-bg-card);
+            background-color: #FFFFFF;
+            border: 1px solid #EFEFEF;
             border-radius: 24px;
             overflow: hidden;
             display: block;
             text-decoration: none;
             color: var(--color-text-main);
-            max-width: 550px;
-            margin: 0 auto;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+            transition: all 0.25s ease;
+            height: calc(100% - 40px); /* 讓兩側卡片高度自動拉齊齊平 */
+        }
+
+        .venue-card:hover {
+            border-color: rgba(130, 58, 0, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(130, 58, 0, 0.05);
         }
 
         .venue-img-wrapper {
             width: 100%;
-            height: 150px;
+            height: 180px;
             background-color: #E0E0E0;
+            overflow: hidden;
         }
 
         .venue-img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .venue-card:hover .venue-img {
+            transform: scale(1.03); /* 輕微懸浮放大特效 */
         }
 
         .venue-info {
-            padding: 20px;
+            padding: 24px;
         }
 
         .venue-name {
             font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 4px;
+            font-weight: 800;
+            margin-bottom: 6px;
+            color: #222222;
         }
 
         .venue-location {
             font-size: 13px;
             color: #666666;
-            margin-bottom: 8px;
+            margin-bottom: 14px;
+            font-weight: 500;
         }
 
         .venue-price {
@@ -259,77 +311,83 @@
 
     <%- include('section/nav') %>
 
-    <div class="main-container">
-        
-        <header class="hero-header"> 
-            <h2 class="hero-title">跳~~~舞~~~</h2>
-            <p class="hero-subtitle">你你你你要跳舞嗎?</p>
-        </header>
-
-       <a href="/venues" class="new-promo-banner">
-            <div class="banner-image-container">
-                <img src="/img/banner.jpg" class="banner-img" alt="合作教室">
-            </div>
-
-            <div class="banner-content">
-                <div class="banner-tag-row">
-                    <span class="badge-sponsored">Sponsored</span>
-                    <span class="venue-name-text">合作教室：Studio</span>
-                </div>
-
-                <h4 class="banner-title">
-                    憑 App 簽到頁面，<span class="highlight-discount">場租享 9 折優惠</span>
-                </h4>
-
-                <p class="banner-footer-text">點擊查看詳情與位置</p>
-            </div>
-        </a>
-
-        <div class="sections-space">
+    <!-- 主體內容區 (套用大容器，寬度完美契合 Wu Jo 新版響應式大佈局) -->
+    <main class="main-content">
+        <div class="container">
             
-            <section>
-                <div class="section-header">
-                    <h3 class="section-title">👯 最新貼文</h3>
-                    <a href="/partner" class="btn-view-all">查看全部</a>
-                </div>
-                
-                <a href="/partner" class="post-card">
-                    <div class="post-author-box">
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= featuredPost.author %>" class="author-avatar">
-                        <div>
-                            <p class="author-name"><%= featuredPost.author %></p>
-                            <p class="post-time"><%= featuredPost.time %></p>
-                        </div>
-                    </div>
-                    <p class="post-body"><%= featuredPost.content %></p>
-                    <div class="hashtag-container">
-                        <% featuredPost.hashtags.forEach(tag => { %>
-                            <span class="hashtag">#<%= tag %></span>
-                        <% }) %>
-                    </div>
-                </a>
-            </section>
+            <!-- 頂部精神標語 -->
+            <header class="hero-header"> 
+                <h1 class="hero-title">跳~~~舞~~~</h1>
+                <p class="hero-subtitle">你你你你要跳舞嗎？</p>
+            </header>
 
-            <section style="margin-top: 36px;">
-                <div class="section-header">
-                    <h3 class="section-title">📍 推薦場地</h3>
-                    <a href="/venues" class="btn-view-all">尋找更多</a>
+            <!-- 合作教室精選 Banner (修正原先 HTML 類名不對應的問題) -->
+            <a href="/venues" class="promo-banner">
+                <img src="/img/banner.jpg" class="promo-img" alt="合作教室精選 Banner">
+                <div class="promo-content">
+                    <div class="tag-row">
+                        <span class="badge-sponsored">Sponsored</span>
+                        <span class="venue-partner-text">合作教室：Studio</span>
+                    </div>
+                    <h2 class="promo-headline">
+                        憑 App 簽到頁面，<span class="highlight-price">場租享 9 折優惠</span>
+                    </h2>
+                    <p class="promo-footer-text">點擊查看詳情與位置</p>
                 </div>
+            </a>
+
+            <!-- 網格佈局區：在寬螢幕自動切換左右雙欄對稱結構 -->
+            <div class="home-grid">
                 
-                <a href="/venues" class="venue-card">
-                    <div class="venue-img-wrapper">
-                        <img src="<%= featuredVenue.image %>" class="venue-img">
+                <!-- 左側：最新貼文區塊 -->
+                <section>
+                    <div class="section-header">
+                        <h3 class="section-title">👯 最新貼文</h3>
+                        <a href="/partner" class="btn-view-all">查看全部</a>
                     </div>
-                    <div class="venue-info">
-                        <h4 class="venue-name"><%= featuredVenue.name %></h4>
-                        <p class="venue-location">🔍 <%= featuredVenue.location %></p>
-                        <div class="venue-price">$<%= featuredVenue.price %> <span style="font-size: 11px; font-weight: normal; color: #777;">/ hr</span></div>
+                    
+                    <a href="/partner" class="post-card">
+                        <div class="post-author-box">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= featuredPost.author %>" class="author-avatar" alt="作者頭像">
+                            <div>
+                                <p class="author-name"><%= featuredPost.author %></p>
+                                <p class="post-time"><%= featuredPost.time %></p>
+                            </div>
+                        </div>
+                        <p class="post-body"><%= featuredPost.content %></p>
+                        <div class="hashtag-container">
+                            <% featuredPost.hashtags.forEach(tag => { %>
+                                <span class="hashtag">#<%= tag %></span>
+                            <% }) %>
+                        </div>
+                    </a>
+                </section>
+
+                <!-- 右側：推薦場地區塊 -->
+                <section>
+                    <div class="section-header">
+                        <h3 class="section-title">📍 推薦場地</h3>
+                        <a href="/venues" class="btn-view-all">尋找更多</a>
                     </div>
-                </a>
-            </section>
+                    
+                    <a href="/venues" class="venue-card">
+                        <div class="venue-img-wrapper">
+                            <img src="<%= featuredVenue.image %>" class="venue-img" alt="推薦場地照片">
+                        </div>
+                        <div class="venue-info">
+                            <h4 class="venue-name"><%= featuredVenue.name %></h4>
+                            <p class="venue-location">🔍 <%= featuredVenue.location %></p>
+                            <div class="venue-price">
+                                $<%= featuredVenue.price %> <span style="font-size: 11px; font-weight: 500; color: #777;">/ hr</span>
+                            </div>
+                        </div>
+                    </a>
+                </section>
+
+            </div>
 
         </div>
-    </div>
+    </main>
 
 </body>
 </html>
