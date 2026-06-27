@@ -12,35 +12,35 @@
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
 
         body {
-            background-color: #FFFFFF !important; /* 大底色純白 */
-            color: #000000 !important; /* 主要文字純黑 */
-            padding-bottom: 120px; /* 留給底部導覽列的空間 */
+            background-color: #FAFAFA !important; /* 同步 Wu Jo 清爽白底 */
+            color: #333333 !important;
         }
 
-        .blacklist-container {
-            max-width: 650px; /* 控制內容寬度 */
-            margin: 0 auto;
-            padding: 80px 16px 20px 16px; /* pt-80 避開頂部固定導覽列 */
+        /* 🟢 核心排版：完全看齊找攝影與舞伴的留空大小與響應式容器 */
+        .main-content {
+            padding-top: 20px;
+            padding-bottom: 90px;
         }
 
         /* 1. 頁面標頭 */
         .page-header {
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
         .page-title {
-            font-size: 28px;
+            font-size: 22px;
             font-weight: 900;
-            color: #823A00; /* 系統主色焦糖棕 */
-            letter-spacing: 1px;
+            color: #222222;
+            letter-spacing: 0.5px;
         }
 
         .page-subtitle {
             font-size: 13px;
-            color: #B37A48; /* 輔助大地色 */
+            color: #666666;
             margin-top: 4px;
         }
 
@@ -53,25 +53,26 @@
 
         .search-input {
             flex: 1;
-            background-color: #EFEFEF; /* 卡片灰底 */
-            border: 1px solid #DDDDDD;
-            border-radius: 24px;
-            padding: 10px 20px;
+            background-color: #FFFFFF; 
+            border: 1px solid #EFEFEF;
+            border-radius: 12px; /* 同步找攝影表單圓角 */
+            padding: 10px 18px;
             font-size: 14px;
             outline: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
             transition: all 0.2s ease;
         }
 
         .search-input:focus {
-            border-color: #CC8C53; /* 聚焦時轉為強調金棕色 */
-            background-color: #FFFFFF;
+            border-color: #823A00; /* 聚焦時轉為系統主色 */
+            box-shadow: 0 2px 8px rgba(130, 58, 0, 0.1);
         }
 
         .btn-search-submit {
-            background-color: #653600; /* 深木棕 */
+            background-color: #823A00; /* 系統主色焦糖棕 */
             color: #FFFFFF;
             border: none;
-            border-radius: 24px;
+            border-radius: 12px;
             padding: 0 24px;
             font-size: 14px;
             font-weight: 700;
@@ -80,31 +81,32 @@
         }
 
         .btn-search-submit:hover {
-            background-color: #4A2700;
+            opacity: 0.9;
         }
 
         /* 3. 黑名單列表堆疊 */
         .list-stack {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 16px;
             margin-bottom: 40px;
         }
 
         .blacklist-card {
-            background-color: #EFEFEF; /* 暖灰卡片底色 */
-            border-radius: 18px;
+            background-color: #FFFFFF; /* 改為與找攝影同規格的純白高質感卡片 */
+            border-radius: 20px;       /* 完美同步 20px 圓角 */
             padding: 16px;
             display: flex;
             align-items: center;
             gap: 14px;
-            border: 1px solid transparent;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid #EFEFEF;
             transition: all 0.2s ease;
         }
 
         .blacklist-card:hover {
-            background-color: #F5F5F5;
-            border-color: #FFCDD2; /* 滑鼠經過時微亮淡紅邊框 */
+            transform: translateY(-2px);
+            border-color: rgba(130, 58, 0, 0.2);
         }
 
         /* 被嚴重舉報用戶的特別邊框 */
@@ -113,12 +115,13 @@
         }
 
         .user-avatar-img {
-            width: 44px;
-            height: 44px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
-            background-color: #FFFFFF;
+            background-color: #FAFAFA;
             border: 1px solid #E0E0E0;
             object-fit: cover;
+            flex-shrink: 0;
         }
 
         /* 停權頭像黑白效果 */
@@ -130,14 +133,13 @@
         .card-main-content {
             flex: 1;
             min-width: 0;
-            min-width: 0;
         }
 
         .card-top-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
 
         .user-name-box {
@@ -147,39 +149,35 @@
         }
 
         .reported-user-name {
-            font-size: 15px;
-            font-weight: 700;
-            color: #C62828; /* 優雅的警告暗紅色 */
+            font-size: 16px;
+            font-weight: 900;
+            color: #C62828; /* 警告暗紅色 */
         }
 
         .badge-banned {
             font-size: 10px;
             background-color: #D32F2F;
             color: #FFFFFF;
-            padding: 1px 6px;
+            padding: 2px 6px;
             border-radius: 4px;
             font-weight: 700;
         }
 
         .report-count-tag {
-            background-color: rgba(211, 47, 47, 0.08);
+            background-color: rgba(211, 47, 47, 0.05);
             color: #D32F2F;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 700;
             padding: 3px 10px;
             border-radius: 12px;
-            border: 1px solid rgba(211, 47, 47, 0.15);
+            border: 1px solid rgba(211, 47, 47, 0.1);
         }
 
         .reason-text {
             font-size: 13px;
             color: #555555;
             line-height: 1.5;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            word-break: break-all;
+            font-weight: 500;
         }
 
         /* 4. 分隔線與表單區塊 */
@@ -190,16 +188,17 @@
         }
 
         .report-form-section {
-            background-color: #EFEFEF;
-            border-radius: 28px;
+            background-color: #FFFFFF;
+            border-radius: 20px;
             padding: 24px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.01);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid #EFEFEF;
         }
 
         .section-form-title {
             font-size: 18px;
-            font-weight: 700;
-            color: #000000;
+            font-weight: 900;
+            color: #222222;
             margin-bottom: 20px;
             display: flex;
             align-items: center;
@@ -216,58 +215,63 @@
         .form-label {
             font-size: 12px;
             font-weight: 700;
-            color: #B37A48;
+            color: #823A00;
             margin-left: 4px;
         }
 
         .form-input-field {
             width: 100%;
-            background-color: #FFFFFF;
-            border: 1px solid #DDDDDD;
-            border-radius: 14px;
+            background-color: #FAFAFA;
+            border: 1px solid #EFEFEF;
+            border-radius: 12px;
             padding: 12px 16px;
             font-size: 14px;
             outline: none;
-            transition: border-color 0.2s ease;
+            transition: all 0.2s ease;
         }
 
         .form-input-field:focus {
-            border-color: #CC8C53;
+            border-color: #823A00;
+            background-color: #FFFFFF;
         }
 
         .form-textarea-field {
             width: 100%;
-            background-color: #FFFFFF;
-            border: 1px solid #DDDDDD;
-            border-radius: 14px;
+            background-color: #FAFAFA;
+            border: 1px solid #EFEFEF;
+            border-radius: 12px;
             padding: 12px 16px;
             font-size: 14px;
             height: 110px;
             outline: none;
             resize: none;
-            transition: border-color 0.2s ease;
+            transition: all 0.2s ease;
         }
 
         .form-textarea-field:focus {
-            border-color: #CC8C53;
+            border-color: #823A00;
+            background-color: #FFFFFF;
         }
 
         .btn-submit-report {
             width: 100%;
-            background-color: #CC8C53; /* 強調色金棕色 */
+            background-color: #823A00; /* 強調色金棕色 */
             color: #FFFFFF;
             border: none;
-            border-radius: 14px;
+            border-radius: 12px;
             padding: 14px 0;
             font-size: 15px;
             font-weight: 700;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(204, 140, 83, 0.15);
-            transition: transform 0.1s ease;
+            transition: all 0.2s ease;
+        }
+
+        .btn-submit-report:hover {
+            opacity: 0.9;
         }
 
         .btn-submit-report:active {
-            transform: scale(0.98);
+            transform: scale(0.99);
         }
 
         /* JavaScript 自動填入時的動態高亮樣式 */
@@ -281,72 +285,74 @@
 
     <%- include('section/nav') %>
 
-    <main class="blacklist-container">
-        
-        <header class="page-header">
-            <h1 class="page-title">黑名單查詢</h1>
-            <p class="page-subtitle">維護舞界環境，遠離放鳥與惡意行為</p>
-        </header>
-
-        <form action="/blacklist" method="GET" class="search-form">
-            <input type="text" name="search" value="<%= typeof searchQuery !== 'undefined' ? searchQuery : '' %>" 
-                   placeholder="搜尋用戶名或原因..." class="search-input">
-            <button type="submit" class="btn-search-submit">搜尋</button>
-        </form>
-
-        <div class="list-stack">
-            <% if (typeof blacklisted !== 'undefined' && blacklisted.length > 0) { %>
-                <% blacklisted.forEach(user => { %>
-                    <div class="blacklist-card <%= user.reportCount >= 5 ? 'severe-alert' : '' %>">
-                        
-                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= user.avatar %>" 
-                             class="user-avatar-img <%= user.reportCount >= 5 ? 'banned' : '' %>" alt="使用者頭像">
-                        
-                        <div class="card-main-content">
-                            <div class="card-top-row">
-                                <div class="user-name-box">
-                                    <h4 class="reported-user-name"><%= user.name %></h4>
-                                    <% if (user.reportCount >= 5) { %>
-                                        <span class="badge-banned">已停權</span>
-                                    <% } %>
-                                </div>
-                                <span class="report-count-tag">
-                                    🚩 檢舉 <%= user.reportCount %> 次
-                                </span>
-                            </div>
-                            <p class="reason-text"><%= user.reason %></p>
-                        </div>
-
-                    </div>
-                <% }) %>
-            <% } else { %>
-                <div style="text-align: center; padding: 40px; color: #777; font-size: 14px;">
-                    🔍 沒有找到相關的黑名單紀錄
-                </div>
-            <% } %>
-        </div>
-
-        <hr class="section-divider">
-
-        <section id="report-section" class="report-form-section">
-            <h3 class="section-form-title">
-                <span style="color: #D32F2F;">🚩</span> 提交黑名單
-            </h3>
+    <!-- 主體內容區 (套用 container 確保兩邊留白與找攝影完全對齊) -->
+    <main class="main-content">
+        <div class="container">
             
-            <form action="/submit-blacklist" method="POST">
-                <div class="form-group">
-                    <label class="form-label">被舉報人用戶名</label>
-                    <input type="text" name="targetName" id="targetUser" placeholder="輸入正確的用戶名稱..." required class="form-input-field">
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">具體原因描述</label>
-                    <textarea name="reason" placeholder="例如：約練舞惡意放鳥、言論騷擾..." required class="form-textarea-field"></textarea>
-                </div>
-                
-                <button type="submit" class="btn-submit-report">提交審核</button>
+            <header class="page-header">
+                <h1 class="page-title">黑名單查詢</h1>
+            </header>
+
+            <form action="/blacklist" method="GET" class="search-form">
+                <input type="text" name="search" value="<%= typeof searchQuery !== 'undefined' ? searchQuery : '' %>" 
+                       placeholder="搜尋用戶名或原因..." class="search-input">
+                <button type="submit" class="btn-search-submit">搜尋</button>
             </form>
-        </section>
+
+            <div class="list-stack">
+                <% if (typeof blacklisted !== 'undefined' && blacklisted.length > 0) { %>
+                    <% blacklisted.forEach(user => { %>
+                        <div class="blacklist-card <%= user.reportCount >= 5 ? 'severe-alert' : '' %>">
+                            
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= user.avatar %>" 
+                                 class="user-avatar-img <%= user.reportCount >= 5 ? 'banned' : '' %>" alt="使用者頭像">
+                            
+                            <div class="card-main-content">
+                                <div class="card-top-row">
+                                    <div class="user-name-box">
+                                        <h4 class="reported-user-name"><%= user.name %></h4>
+                                        <% if (user.reportCount >= 5) { %>
+                                            <span class="badge-banned">已停權</span>
+                                        <% } %>
+                                    </div>
+                                    <span class="report-count-tag">
+                                        🚩 檢舉 <%= user.reportCount %> 次
+                                    </span>
+                                </div>
+                                <p class="reason-text"><%= user.reason %></p>
+                            </div>
+
+                        </div>
+                    <% }) %>
+                <% } else { %>
+                    <div style="text-align: center; padding: 40px; color: #777; font-size: 14px; background: white; border-radius: 20px; border: 1px solid #EFEFEF;">
+                        🔍 沒有找到相關的黑名單紀錄
+                    </div>
+                <% } %>
+            </div>
+
+            <hr class="section-divider">
+
+            <section id="report-section" class="report-form-section">
+                <h3 class="section-form-title">
+                    <span style="color: #D32F2F;">⚠️</span> 提交黑名單報告
+                </h3>
+                
+                <form action="/submit-blacklist" method="POST">
+                    <div class="form-group">
+                        <label class="form-label">被舉報人用戶名</label>
+                        <input type="text" name="targetName" id="targetUser" placeholder="輸入正確的用戶名稱..." required class="form-input-field">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">具體原因描述</label>
+                        <textarea name="reason" placeholder="例如：約練舞惡意放鳥、言論騷擾..." required class="form-textarea-field"></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn-submit-report">提交審核</button>
+                </form>
+            </section>
+        </div>
     </main>
 
     <script>
@@ -359,7 +365,6 @@
                 if (nameInput) {
                     nameInput.value = targetName;
                     
-                    // 套用大地色系專屬的自動填入高亮提示樣式
                     nameInput.classList.add('js-auto-filled');
                     
                     const reportSection = document.getElementById('report-section');
