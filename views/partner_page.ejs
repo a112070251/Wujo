@@ -5,7 +5,7 @@
     <title>尋找舞伴 - Wu Jo</title>
     <style>
         /* ==========================================
-           全純 CSS 控制，完全不依賴任何 Tailwind
+           全純 CSS 控制，完美同步「找攝影」高質感間距與留白
            ========================================== */
         * {
             box-sizing: border-box;
@@ -17,94 +17,111 @@
         body {
             background-color: #FAFAFA !important; /* Wu Jo 清爽白底 */
             color: #333333 !important;
-            padding-bottom: 120px;
         }
 
-        .main-container {
-            max-width: 480px; /* 統一與其他頁面相同的黃金手機寬度 */
-            margin: 0 auto;
-            padding: 80px 20px 20px 20px;
+        /* 🟢 核心排版：完全看齊找攝影的留空大小 */
+        .main-content {
+            padding-top: 20px;
+            padding-bottom: 90px;
         }
 
-        .page-title {
-            font-size: 24px;
-            font-weight: 900;
-            color: #111111;
-            margin-bottom: 16px;
-            padding-left: 4px;
-        }
-
-        /* 舞風篩選器滾動條 */
+        /* 舞風篩選器滾動條容器 */
         .filter-scroll-container {
-            display: flex;
-            gap: 10px;
-            overflow-x: auto;
-            padding: 4px 4px 16px 4px;
-            margin-bottom: 16px;
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            gap: 8px !important;
+            overflow-x: auto !important;
+            padding-bottom: 12px !important;
+            margin-bottom: 16px !important;
+            -webkit-overflow-scrolling: touch;
             scrollbar-width: none; /* 隱藏火狐滾動條 */
         }
         .filter-scroll-container::-webkit-scrollbar {
             display: none; /* 隱藏 Chrome 滾動條 */
         }
 
-        /* 🏷️ 分類標籤樣式 */
-        .filter-chip {
-            background-color: #FFFFFF;
-            border: 1px solid #EFEFEF;
-            padding: 8px 18px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 600;
-            color: #666666;
-            white-space: nowrap;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-decoration: none;
+        /* 🏷️ 分類標籤樣式 (使用極高權限，澈底阻斷全域 Grid/Flex 拉伸) */
+        .filter-scroll-container .filter-chip {
+            display: inline-block !important;
+            width: max-content !important;
+            max-width: fit-content !important;
+            flex: none !important;
+            flex-shrink: 0 !important;
+            background: #F0F0F0 !important;
+            color: #555 !important;
+            padding: 6px 16px !important;
+            border-radius: 20px !important;
+            font-size: 13px !important;
+            font-weight: bold !important;
+            white-space: nowrap !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+            text-decoration: none !important;
+            border: none !important;
         }
 
-        /* 被啟動（選中）的標籤樣式 */
-        .filter-chip.active {
-            background-color: #F5EFEA;
-            border-color: #B37A48;
-            color: #823A00;
+        /* 被啟動（選中）的標籤樣式 - 同步找攝影的深焦糖底色 */
+        .filter-scroll-container .filter-chip.active {
+            background: #823A00 !important;
+            color: white !important;
         }
 
         /* 舞伴卡片列表 */
         .partner-list {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 16px;
         }
 
-        /* 獨立舞伴卡片 */
+        /* 獨立舞伴卡片 (圓角與陰影同步找攝影的 venue-card) */
         .partner-card {
             background-color: #FFFFFF;
-            border-radius: 32px;
-            padding: 24px;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             border: 1px solid #EFEFEF;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.01);
-            position: relative;
+            display: flex;
+            flex-direction: column;
             transition: transform 0.2s, border-color 0.2s;
         }
 
         .partner-card:hover {
             transform: translateY(-2px);
-            border-color: rgba(179, 122, 72, 0.2);
+            border-color: rgba(130, 58, 0, 0.2);
         }
 
-        /* 卡片上方：頭貼與基本資料 */
+        /* 卡片上方內距 */
+        .partner-card-inner {
+            padding: 16px;
+        }
+
         .partner-header {
             display: flex;
             align-items: center;
-            gap: 16px;
-            margin-bottom: 16px;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+
+        /* 🟢 點擊頭像/名字跳轉的超連結樣式，移除預設底線並微調點擊縮放 */
+        .profile-link {
+            text-decoration: none;
+            color: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 14px;
+            transition: opacity 0.2s ease;
+        }
+        .profile-link:hover {
+            opacity: 0.85;
         }
 
         .avatar-border {
-            width: 68px;
-            height: 68px;
+            width: 64px;
+            height: 64px;
             border-radius: 50%;
-            padding: 3px;
+            padding: 2px;
             background: linear-gradient(135deg, #B37A48 0%, #823A00 100%);
             overflow: hidden;
             flex-shrink: 0;
@@ -120,8 +137,8 @@
         }
 
         .partner-name {
-            font-size: 18px;
-            font-weight: 800;
+            font-size: 17px;
+            font-weight: 900;
             color: #222222;
             margin-bottom: 4px;
         }
@@ -132,23 +149,22 @@
             display: inline-block;
             padding: 2px 8px;
             border-radius: 6px;
-            background-color: #F5EFEA;
-            color: #B37A48;
+            background-color: #FFF3E0;
+            color: #E65100;
             text-transform: uppercase;
         }
 
-        /* 內文區塊（自我介紹、誠信紀錄） */
+        /* 內文區塊 */
         .partner-body {
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            margin-bottom: 20px;
+            gap: 10px;
         }
 
         .info-sub-box {
             background-color: #FAFAFA;
-            border-radius: 16px;
-            padding: 12px 16px;
+            border-radius: 12px;
+            padding: 12px;
             border: 1px solid #F5F5F5;
         }
 
@@ -163,6 +179,7 @@
             font-size: 13px;
             color: #444444;
             line-height: 1.5;
+            font-weight: 500;
         }
 
         /* 誠信小字 */
@@ -172,6 +189,7 @@
             align-items: center;
             font-size: 12px;
             color: #666666;
+            padding: 0 4px;
         }
         
         .report-count-zero {
@@ -179,18 +197,21 @@
             font-weight: 700;
         }
 
-        /* 右下角按鈕群組 */
+        /* 底部按鈕群組區塊 (同步找攝影的下緣灰色分隔帶) */
         .partner-actions {
+            background: #FAFAFA;
+            border-top: 1px solid #F0F0F0;
+            padding: 12px 16px;
             display: flex;
             justify-content: flex-end;
             gap: 10px;
         }
 
         .btn-action {
-            padding: 8px 16px;
-            border-radius: 20px;
+            padding: 6px 16px;
+            border-radius: 10px;
             font-size: 12px;
-            font-weight: 700;
+            font-weight: bold;
             text-decoration: none;
             transition: all 0.2s ease;
             display: inline-flex;
@@ -200,22 +221,20 @@
 
         .btn-review {
             background-color: #FFFFFF;
-            border: 1px solid #EFEFEF;
+            border: 1px solid #DDD;
             color: #666666;
         }
         .btn-review:hover {
-            border-color: #B37A48;
+            border-color: #823A00;
             color: #823A00;
         }
 
         .btn-chat {
-            background: linear-gradient(135deg, #B37A48 0%, #823A00 100%);
+            background: #823A00;
             color: #FFFFFF;
-            box-shadow: 0 4px 12px rgba(130, 58, 0, 0.15);
         }
         .btn-chat:hover {
-            transform: scale(1.03);
-            box-shadow: 0 4px 16px rgba(130, 58, 0, 0.2);
+            opacity: 0.9;
         }
     </style>
 </head>
@@ -223,106 +242,132 @@
 
     <%- include('section/nav') %>
 
-    <main class="main-container">
-        <h1 class="page-title">尋找舞伴</h1>
+    <main class="main-content">
+        <div class="container">
+            
+            <div class="page-header" style="margin-bottom: 20px;">
+                <h2 style="font-size: 22px; font-weight: 900; color: #222; margin: 0;">找舞伴</h2>
+            </div>
 
-        <div class="filter-scroll-container">
-            <button class="filter-chip" data-type="all">全部舞風</button>
-            <button class="filter-chip" data-type="Hip-Hop">Hip-Hop</button>
-            <button class="filter-chip" data-type="Popping">Popping</button>
-            <button class="filter-chip" data-type="Locking">Locking</button>
-            <button class="filter-chip" data-type="Breaking">Breaking</button>
-            <button class="filter-chip" data-type="House">House</button>
-        </div>
+            <!-- 選項區 -->
+            <div class="filter-scroll-container">
+                <button class="filter-chip" data-type="all">全部舞風</button>
+                <button class="filter-chip" data-type="Hip-Hop">Hip-Hop</button>
+                <button class="filter-chip" data-type="Popping">Popping</button>
+                <button class="filter-chip" data-type="Locking">Locking</button>
+                <button class="filter-chip" data-type="Breaking">Breaking</button>
+                <button class="filter-chip" data-type="House">House</button>
+            </div>
 
-        <div class="partner-list">
+            <div class="partner-list">
 
-            <% if (typeof developers !== 'undefined' && developers.length > 0) { %>
-                <% developers.forEach(user => { %>
-                    <div class="partner-card">
-                        <div class="partner-header">
-                            <div class="avatar-border">
-                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= user.avatar %>" class="partner-avatar" alt="avatar">
+                <% if (typeof developers !== 'undefined' && developers.length > 0) { %>
+                    <% developers.forEach(user => { %>
+                        <div class="partner-card">
+                            <div class="partner-card-inner">
+                                <div class="partner-header">
+                                    <!-- 🟢 核心修正：將頭像與名字打包進 profile 動態路由連結中 -->
+                                    <a href="/profile/<%= encodeURIComponent(user.name) %>" class="profile-link">
+                                        <div class="avatar-border">
+                                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= user.avatar %>" class="partner-avatar" alt="avatar">
+                                        </div>
+                                        <div>
+                                            <h3 class="partner-name"><%= user.name %></h3>
+                                            <span class="partner-dance-tag"><%= user.danceType || '未填寫' %></span>
+                                        </div>
+                                    </a>
+                                </div>
+
+                                <div class="partner-body">
+                                    <div class="info-sub-box">
+                                        <p class="info-label">個人介紹</p>
+                                        <p class="info-content"><%= user.intro || '這位舞者很神秘，還沒有填寫自我介紹喔！' %></p>
+                                    </div>
+                                    <div class="meta-row">
+                                        <span>信用紀錄</span>
+                                        <span>累計檢舉次數：<span class="report-count-zero">0 次</span></span>
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <h3 class="partner-name"><%= user.name %></h3>
-                                <span class="partner-dance-tag"><%= user.danceType || '未填寫' %></span>
+
+                            <div class="partner-actions">
+                                <!-- 🟢 同步修正：讓評價按鈕也可以精準帶到該舞者的名字 -->
+                                <a href="/review?target=<%= encodeURIComponent(user.name) %>" class="btn-action btn-review">⭐️ 評價</a>
+                                <a href="/chat/<%= user.id %>" class="btn-action btn-chat">💬 私訊</a>
                             </div>
                         </div>
-
-                        <div class="partner-body">
-                            <div class="info-sub-box">
-                                <p class="info-label">個人介紹</p>
-                                <p class="info-content"><%= user.intro || '這位舞者很神秘，還沒有填寫自我介紹喔！' %></p>
+                    <% }) %>
+                <% } else { %>
+                    
+                    <!-- 預設 Mock 舞者 1：hua -->
+                    <div class="partner-card" data-dance="K-Pop,Hip-Hop">
+                        <div class="partner-card-inner">
+                            <div class="partner-header">
+                                <!-- 🟢 核心修正：打包動態連結至 /profile/hua -->
+                                <a href="/profile/hua" class="profile-link">
+                                    <div class="avatar-border">
+                                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Hua" class="partner-avatar" alt="avatar">
+                                    </div>
+                                    <div>
+                                        <h3 class="partner-name">hua</h3>
+                                        <span class="partner-dance-tag">K-Pop / Hip-Hop</span>
+                                    </div>
+                                </a>
                             </div>
-                            <div class="meta-row px-1">
-                                <span>信用紀錄</span>
-                                <span>累計檢舉次數：<span class="report-count-zero">0 次</span></span>
+                            <div class="partner-body">
+                                <div class="info-sub-box">
+                                    <p class="info-label">個人介紹</p>
+                                    <p class="info-content">"嗨！我是hua。希望能找到志同道合的舞伴一起進步，歡迎私訊我約練喔！"</p>
+                                </div>
+                                <div class="meta-row">
+                                    <span>信用紀錄</span>
+                                    <span>累計檢舉次數：<span class="report-count-zero">0 次</span></span>
+                                </div>
                             </div>
                         </div>
-
                         <div class="partner-actions">
-                            <a href="/review" class="btn-action btn-review">⭐️ 評價</a>
-                            <a href="/chat/<%= user.id %>" class="btn-action btn-chat">💬 私訊</a>
+                            <!-- 🟢 同步修正：動態帶入評價參數 -->
+                            <a href="/review?target=hua" class="btn-action btn-review">⭐️ 評價</a>
+                            <a href="/chat/1" class="btn-action btn-chat">💬 私訊</a>
                         </div>
                     </div>
-                <% }) %>
-            <% } else { %>
-                
-                <div class="partner-card" data-dance="K-Pop,Hip-Hop">
-                    <div class="partner-header">
-                        <div class="avatar-border">
-                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Hua" class="partner-avatar" alt="avatar">
-                        </div>
-                        <div>
-                            <h3 class="partner-name">hua</h3>
-                            <span class="partner-dance-tag">K-Pop / Hip-Hop</span>
-                        </div>
-                    </div>
-                    <div class="partner-body">
-                        <div class="info-sub-box">
-                            <p class="info-label">個人介紹</p>
-                            <p class="info-content">"嗨！我是hua。希望能找到志同道合的舞伴一起進步，歡迎私訊我約練喔！"</p>
-                        </div>
-                        <div class="meta-row">
-                            <span>信用紀錄</span>
-                            <span>累計檢舉次數：<span class="report-count-zero">0 次</span></span>
-                        </div>
-                    </div>
-                    <div class="partner-actions">
-                        <a href="/review" class="btn-action btn-review">⭐️ 評價</a>
-                        <a href="/chat/1" class="btn-action btn-chat">💬 私訊</a>
-                    </div>
-                </div>
 
-                <div class="partner-card" data-dance="Popping,Locking">
-                    <div class="partner-header">
-                        <div class="avatar-border">
-                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Ming" class="partner-avatar" alt="avatar">
+                    <!-- 預設 Mock 舞者 2：小明 -->
+                    <div class="partner-card" data-dance="Popping,Locking">
+                        <div class="partner-card-inner">
+                            <div class="partner-header">
+                                <!-- 🟢 核心修正：打包動態連結至 /profile/小明 -->
+                                <a href="/profile/%E5%B0%8F%E6%98%8E" class="profile-link">
+                                    <div class="avatar-border">
+                                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Ming" class="partner-avatar" alt="avatar">
+                                    </div>
+                                    <div>
+                                        <h3 class="partner-name">小明</h3>
+                                        <span class="partner-dance-tag">Popping / Locking</span>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="partner-body">
+                                <div class="info-sub-box">
+                                    <p class="info-label">個人介紹</p>
+                                    <p class="info-content">"目前固定在北車和西門练舞，希望能找拍子穩的夥伴一起排舞或 Cypher！"</p>
+                                </div>
+                                <div class="meta-row">
+                                    <span>信用紀錄</span>
+                                    <span>累計檢舉次數：<span class="report-count-zero">0 次</span></span>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <h3 class="partner-name">小明</h3>
-                            <span class="partner-dance-tag">Popping / Locking</span>
+                        <div class="partner-actions">
+                            <!-- 🟢 同步修正：動態帶入評價參數 -->
+                            <a href="/review?target=%E5%B0%8F%E6%98%8E" class="btn-action btn-review">⭐️ 評價</a>
+                            <a href="/chat/2" class="btn-action btn-chat">💬 私訊</a>
                         </div>
                     </div>
-                    <div class="partner-body">
-                        <div class="info-sub-box">
-                            <p class="info-label">個人介紹</p>
-                            <p class="info-content">"目前固定在北車和西門练舞，希望能找拍子穩的夥伴一起排舞或 Cypher！"</p>
-                        </div>
-                        <div class="meta-row">
-                            <span>信用紀錄</span>
-                            <span>累計檢舉次數：<span class="report-count-zero">0 次</span></span>
-                        </div>
-                    </div>
-                    <div class="partner-actions">
-                        <a href="/review" class="btn-action btn-review">⭐️ 評價</a>
-                        <a href="/chat/2" class="btn-action btn-chat">💬 私訊</a>
-                    </div>
-                </div>
 
-            <% } %>
+                <% } %>
 
+            </div>
         </div>
     </main>
 
@@ -331,11 +376,9 @@
             const chips = document.querySelectorAll(".filter-chip");
             const cards = document.querySelectorAll(".partner-card");
 
-            // 1. 解析網址上的參數（確保網頁重新整理後，按鈕高亮狀態不會消失）
             const urlParams = new URLSearchParams(window.location.search);
             const currentType = urlParams.get("danceType") || "all";
 
-            // 2. 讓對應的分類標籤變成選中狀態（焦糖色）
             chips.forEach(chip => {
                 if (chip.getAttribute("data-type") === currentType) {
                     chip.classList.add("active");
@@ -343,26 +386,22 @@
                     chip.classList.remove("active");
                 }
 
-                // 3. 綁定點擊事件
                 chip.addEventListener("click", () => {
                     const selectedType = chip.getAttribute("data-type");
-                    
-                    // 核心操作：直接將瀏覽器網址跳轉，將分類參數帶回後端處理
                     if (selectedType === "all") {
-                        window.location.href = window.location.pathname; // 回到沒有引數的原始頁面
+                        window.location.href = window.location.pathname;
                     } else {
                         window.location.href = `?danceType=${encodeURIComponent(selectedType)}`;
                     }
                 });
             });
 
-            // 4. 【純前端應急防護】如果後端還沒有接好撈資料庫邏輯，這邊做純前端的卡片隱藏/顯示
             if (window.location.search && cards.length > 0) {
                 cards.forEach(card => {
                     const cardDance = card.getAttribute("data-dance");
                     if (cardDance) {
                         if (currentType === "all" || cardDance.toLowerCase().includes(currentType.toLowerCase())) {
-                            card.style.display = "block";
+                            card.style.display = "flex";
                         } else {
                             card.style.display = "none";
                         }
