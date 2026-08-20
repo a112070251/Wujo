@@ -132,6 +132,27 @@ app.post('/login', (req, res) => {
     return res.redirect('/me');
 });
 
+app.post('/register', async (req, res) => {
+    try {
+        const { name, email, password, agreeTerms } = req.body;
+
+        // 後端二次驗證：確認使用者真的有勾選同意條款
+        if (!agreeTerms) {
+            return res.status(400).send("必須同意服務條款與隱私權政策才能完成註冊");
+        }
+
+        // TODO: 在此處撰寫寫入 MongoDB 的邏輯 (例如：await User.create({...}))
+
+        console.log(`使用者 ${name} (${email}) 註冊成功`);
+
+        // 1. 註冊成功後，自動跳轉回到登入頁面
+        res.redirect('/login');
+    } catch (err) {
+        console.error("註冊失敗:", err);
+        res.status(500).send("註冊失敗，請重試");
+    }
+});
+
 app.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/'); });
 
 // --- 尋找這段原本的 /me 路由，並在其下方補上 POST 路由 ---

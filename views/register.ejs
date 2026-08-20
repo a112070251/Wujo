@@ -143,8 +143,51 @@
                 <input type="password" name="password" class="form-input" placeholder="至少 6 位字元" required>
             </div>
 
+            <!-- 2. 新增服務條款與隱私權同意勾選框 -->
+            <div class="form-group checkbox-group">
+                <input type="checkbox" id="agreeTerms" name="agreeTerms" value="true" required>
+                <label for="agreeTerms" class="checkbox-label">
+                    我已詳細閱讀並同意 <a href="/terms" target="_blank">服務條款</a> 與 <a href="/terms#privacy" target="_blank">隱私權政策</a>
+                </label>
+            </div>
+
             <button type="submit" class="btn-submit">完成註冊</button>
         </form>
+
+        <style>
+            /* 新增勾選框的專屬樣式 */
+            .checkbox-group {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-top: 16px;
+                margin-bottom: 20px;
+            }
+
+            .checkbox-group input[type="checkbox"] {
+                width: 18px;
+                height: 18px;
+                accent-color: #823A00; /* 焦糖棕色系 */
+                cursor: pointer;
+            }
+
+            .checkbox-label {
+                font-size: 13px;
+                color: #555555;
+                cursor: pointer;
+                user-select: none;
+            }
+
+            .checkbox-label a {
+                color: #823A00;
+                text-decoration: underline;
+                font-weight: 600;
+            }
+
+            .checkbox-label a:hover {
+                color: #CC8C53;
+            }
+        </style>
 
         <p class="terms-text">
             點擊「完成註冊」即表示您同意本站的 
