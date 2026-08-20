@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
+    <%- include('section/head') %>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>註冊帳號 - WU JO</title>
+    <title>註冊帳號 - WuJo</title>
     <style>
         * {
             box-sizing: border-box;
@@ -13,7 +14,7 @@
         }
 
         body {
-            background-color: #FAFAFA;
+            background-color: #FAFAFA !important;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -74,6 +75,39 @@
             border-color: #823A00;
         }
 
+        /* 同意條款勾選框樣式 */
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 16px;
+            margin-bottom: 20px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #823A00;
+            cursor: pointer;
+        }
+
+        .checkbox-label {
+            font-size: 13px;
+            color: #555555;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .checkbox-label a {
+            color: #823A00;
+            text-decoration: underline;
+            font-weight: 600;
+        }
+
+        .checkbox-label a:hover {
+            color: #CC8C53;
+        }
+
         .btn-submit {
             width: 100%;
             padding: 14px;
@@ -85,7 +119,6 @@
             font-weight: 700;
             cursor: pointer;
             transition: background-color 0.2s;
-            margin-top: 8px;
         }
 
         .btn-submit:hover {
@@ -105,16 +138,7 @@
             text-decoration: none;
         }
 
-        .terms-text {
-            font-size: 12px;
-            color: #888;
-            margin-top: 16px;
-            text-align: center;
-            line-height: 1.4;
-        }
-
-        .terms-text a {
-            color: #555;
+        .auth-footer a:hover {
             text-decoration: underline;
         }
     </style>
@@ -124,7 +148,7 @@
     <div class="auth-card">
         <div class="auth-header">
             <h1 class="auth-title">建立新帳號</h1>
-            <p class="auth-subtitle">加入WU JO，尋找舞伴與合適練舞室</p>
+            <p class="auth-subtitle">加入 WuJo，尋找舞伴與合適練舞室</p>
         </div>
 
         <form action="/register" method="POST">
@@ -143,7 +167,7 @@
                 <input type="password" name="password" class="form-input" placeholder="至少 6 位字元" required>
             </div>
 
-            <!-- 2. 新增服務條款與隱私權同意勾選框 -->
+            <!-- 服務條款與隱私權同意勾選框 -->
             <div class="form-group checkbox-group">
                 <input type="checkbox" id="agreeTerms" name="agreeTerms" value="true" required>
                 <label for="agreeTerms" class="checkbox-label">
@@ -153,45 +177,6 @@
 
             <button type="submit" class="btn-submit">完成註冊</button>
         </form>
-
-        <style>
-            /* 新增勾選框的專屬樣式 */
-            .checkbox-group {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                margin-top: 16px;
-                margin-bottom: 20px;
-            }
-
-            .checkbox-group input[type="checkbox"] {
-                width: 18px;
-                height: 18px;
-                accent-color: #823A00; /* 焦糖棕色系 */
-                cursor: pointer;
-            }
-
-            .checkbox-label {
-                font-size: 13px;
-                color: #555555;
-                cursor: pointer;
-                user-select: none;
-            }
-
-            .checkbox-label a {
-                color: #823A00;
-                text-decoration: underline;
-                font-weight: 600;
-            }
-
-            .checkbox-label a:hover {
-                color: #CC8C53;
-            }
-        </style>
-
-        <p class="terms-text">
-            點擊「完成註冊」即表示您同意本站的服務條款與隱私權政策
-        </p>
 
         <div class="auth-footer">
             已經有帳號了？ <a href="/login">直接登入</a>
