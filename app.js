@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const app = express();
 const path = require('path');
 const session = require('express-session');
+const mongoose = require('mongoose'); // 1. 【關鍵修正】補上 mongoose 引用
 
 // --- 基礎設定 ---
 app.set('view engine', 'ejs');
@@ -81,7 +82,6 @@ app.use((req, res, next) => {
     res.locals.hasNewMsg = !!req.session.user;
     next();
 });
-app.use(express.static('public'));
 
 // --- 4. 路由開始 ---
 
@@ -90,17 +90,17 @@ app.get('/', (req, res) => {
     res.render('index', { featuredPost: allPosts[0], featuredVenue: rooms[0] });
 });
 
-// 1. 顯示登入頁面（你原本應該已經有了）
+// 1. 顯示登入頁面
 app.get('/login', (req, res) => {
     res.render('login');
 });
 
-// 2. 新增：顯示註冊頁面
+// 2. 顯示註冊頁面
 app.get('/register', (req, res) => {
     res.render('register');
 });
 
-// 3. 新增：顯示法律條款與隱私權政策頁面
+// 3. 顯示法律條款與隱私權政策頁面
 app.get('/terms', (req, res) => {
     res.render('terms');
 });
@@ -136,16 +136,11 @@ app.post('/register', async (req, res) => {
     try {
         const { name, email, password, agreeTerms } = req.body;
 
-        // 後端二次驗證：確認使用者真的有勾選同意條款
         if (!agreeTerms) {
             return res.status(400).send("必須同意服務條款與隱私權政策才能完成註冊");
         }
 
-        // TODO: 在此處撰寫寫入 MongoDB 的邏輯 (例如：await User.create({...}))
-
         console.log(`使用者 ${name} (${email}) 註冊成功`);
-
-        // 1. 註冊成功後，自動跳轉回到登入頁面
         res.redirect('/login');
     } catch (err) {
         console.error("註冊失敗:", err);
@@ -155,13 +150,11 @@ app.post('/register', async (req, res) => {
 
 app.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/'); });
 
-// --- 尋找這段原本的 /me 路由，並在其下方補上 POST 路由 ---
 app.get('/me', (req, res) => {
     if (!req.session.user) {
         return res.redirect('/login'); 
     }
     
-    // 初始化設定，防呆不寫死
     if (typeof req.session.user.isPhotographer === 'undefined') {
         req.session.user.isPhotographer = false;
         req.session.user.photoPrice = "0";
@@ -171,18 +164,16 @@ app.get('/me', (req, res) => {
     res.render('me', { user: req.session.user });
 });
 
-// 🎯 【關鍵修正】確切移至此處！確保在所有動態路由（如 /venues/:id）之上
 app.post('/update-photographer', (req, res) => {
     if (!req.session.user) return res.redirect('/login');
 
     const { isPhotographer, photoPrice, photoStyle } = req.body;
 
-    // 將資料動態更新進 Session 記憶體中，實時生效
     req.session.user.isPhotographer = (isPhotographer === 'true');
     req.session.user.photoPrice = photoPrice || "0";
     req.session.user.photoStyle = photoStyle || "";
 
-    res.redirect('/me'); // 儲存後導回個人頁面刷新檢視
+    res.redirect('/me');
 });
 
 app.get('/blacklist', (req, res) => {
@@ -243,31 +234,23 @@ app.get('/messages', (req, res) => {
     res.render('messages', { chatList: chatList });
 });
 
-// A. 帶 ID 的聊天路由
 app.get('/chat/:id', (req, res) => {
     if (!req.session.user) return res.redirect('/login');
-    
-    // 根據貼文 ID 撈出對應的作者
     const post = allPosts.find(p => p.id === req.params.id);
     const chatTarget = post ? { name: post.author, avatar: post.author } : { name: "測試舞者", avatar: "avatar_seed_123" };
-
     res.render('chat', { chatTarget }); 
 });
 
-// B. 純 /chat 備用安全路由
 app.get('/chat', (req, res) => {
     if (!req.session.user) return res.redirect('/login');
     const chatTarget = { name: allPosts[0].author, avatar: allPosts[0].author };
-    
-    res.render('chat', { chatTarget }); // 統一使用 chatTarget
+    res.render('chat', { chatTarget });
 });
 
 app.get('/api/current-location', (req, res) => {
-    // 預留給前端 Fetch 使用，動態回傳附近場館
     res.json({ success: true, district: "大安區", lat: 25.0339, lng: 121.5434 });
 });
 
-// 1. 列表頁維持複數 /venues
 app.get('/api/nearest-venue', (req, res) => {
     const userLat = parseFloat(req.query.lat);
     const userLng = parseFloat(req.query.lng);
@@ -276,36 +259,32 @@ app.get('/api/nearest-venue', (req, res) => {
         return res.status(400).json({ error: "無法取得您的經緯度" });
     }
 
-    // 地球半徑 (公里)
     const R = 6371; 
     let nearestRoom = null;
     let minDistance = Infinity;
 
     rooms.forEach(room => {
-        // 使用 Haversine 公式計算兩點間的真實直線距離
         const dLat = (room.lat - userLat) * Math.PI / 180;
         const dLng = (room.lng - userLng) * Math.PI / 180;
         const a = 
             Math.sin(dLat/2) * Math.sin(dLat/2) +
             Math.cos(userLat * Math.PI / 180) * Math.cos(room.lat * Math.PI / 180) * Math.sin(dLng/2) * Math.sin(dLng/2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        const distance = R * c; // 得到的距離 (公里)
+        const distance = R * c;
 
         if (distance < minDistance) {
             minDistance = distance;
-            nearestRoom = { ...room, distance: distance.toFixed(2) }; // 保留兩位小數
+            nearestRoom = { ...room, distance: distance.toFixed(2) };
         }
     });
 
     res.json({ nearestRoom });
 });
 
-// 3. 修改原本的 /venues 路由，確保能渲染完整的 rooms
 app.get('/venues', (req, res) => {
     res.render('venues_page', { rooms: rooms });
 });
 
-// 2. 詳細頁維持複數 /venues/:id
 app.get('/venues/:id', (req, res) => {
     const roomData = rooms[req.params.id]; 
     if (roomData) {
@@ -316,7 +295,6 @@ app.get('/venues/:id', (req, res) => {
 });
 
 app.get('/profile/:username', (req, res) => {
-    // 💡 核心修正：沒登入的人點進來，無條件踢回去登入頁！
     if (!req.session.user) {
         return res.redirect('/login');
     }
@@ -324,7 +302,6 @@ app.get('/profile/:username', (req, res) => {
     const targetName = req.params.username;
     const reports = userReportsCounter[targetName] || 0;
     
-    // 🟢 修正原先程式碼變數未定義的錯誤，動態產出該舞者 profile 資料
     const profileData = {
         name: targetName,
         avatar: targetName,
@@ -333,7 +310,6 @@ app.get('/profile/:username', (req, res) => {
         reportCount: reports
     };
 
-    // 🟢 動態撈出屬於這個使用者的評價紀錄，若無則給予空陣列防禦
     const reviews = partnerReviews[targetName] || [];
 
     res.render('profile', {
@@ -342,18 +318,14 @@ app.get('/profile/:username', (req, res) => {
     });
 });
 
-// 找攝影師
 app.get('/photographers', (req, res) => {
-    // 獲取網址參數，如果沒有傳，預設為 '全部風格'
     const currentStyle = req.query.style || '全部風格';
     
-    // 建立完整的攝影師儲存庫
     let currentList = [
         { name: "小明", avatar: "XiaoMing", style: "街舞動態", price: "1500", location: "台北" },
         { name: "阿華", avatar: "AhHua", style: "活動劇照", price: "2000", location: "台中" }
     ];
 
-    // 動態檢查當前登入使用者是否開啟攝影接案，並推入列表中
     if (req.session.user && req.session.user.isPhotographer) {
         const alreadyExists = currentList.some(p => p.name === req.session.user.name);
         if (!alreadyExists) {
@@ -367,13 +339,11 @@ app.get('/photographers', (req, res) => {
         }
     }
 
-    // 【核心篩選邏輯】如果不是選擇 '全部風格'，就過濾出符合風格的攝影師
     let filteredPhotographers = currentList;
     if (currentStyle !== '全部風格') {
         filteredPhotographers = currentList.filter(p => p.style.includes(currentStyle));
     }
 
-    // 將過濾後的名單與當前選中的風格傳給前端 EJS
     res.render('photographers', { 
         photographers: filteredPhotographers, 
         currentStyle: currentStyle 
@@ -386,14 +356,12 @@ app.get('/review', (req, res) => {
     const targetName = req.query.target;
     
     if (!targetName) {
-        return res.redirect('/partner'); // 如果沒帶目標，防呆踢回夥伴頁
+        return res.redirect('/partner');
     }
 
-    // 🟢 動態配置：根據點擊的目標名字，自動生成對應的資料
     const targetUser = {
         name: targetName,
-        avatar: targetName, // 讓頭像 seed 直接等於名字，跟 profile 頁面完全同步
-        // 根據特定名字給予舞風，或者給予通用預設值
+        avatar: targetName,
         danceType: targetName === "阿強" ? "Breaking / Popping" : "K-Pop / HipHop"
     };
 
@@ -408,7 +376,6 @@ app.get('/review/photographer', (req, res) => {
         style: "街舞動態攝影 / 韓系直拍",
         rating: "4.9"
     };
-    // 傳送 targetPhotographer 以及動態的 photoReviews 陣列
     res.render('review_photographer', { targetPhotographer, photoReviews });
 });
 
@@ -416,26 +383,24 @@ app.post('/submit-photo-review', (req, res) => {
     const { targetName, rating, tags, comment } = req.body;
     const userName = req.session.user ? req.session.user.name : "匿名舞者";
     
-    // 處理前端送過來的複選標籤資料（如果是單選會是字串，複選是陣列，沒選則是 undefined）
     let selectedTags = [];
     if (tags) {
         selectedTags = Array.isArray(tags) ? tags : [tags];
     }
 
-    // 將新評價推入全域陣列的最前端（最新的顯示在最上面）
     photoReviews.unshift({
         name: "舞者 " + userName,
         rating: rating,
         tags: selectedTags,
         comment: comment,
-        date: new Date().toISOString().split('T')[0] // 動態生成今天日期
+        date: new Date().toISOString().split('T')[0]
     });
 
-    // 重新導向回該攝影師的評價頁面
     res.redirect(`/review/photographer?target=${encodeURIComponent(targetName)}`);
 });
 
 app.get('/share', (req, res) => res.render('share'));
+
 app.post('/submit-review', (req, res) => {
     if (!req.session.user) return res.redirect('/login');
 
@@ -443,25 +408,23 @@ app.post('/submit-review', (req, res) => {
     const reviewerName = req.session.user.name;
 
     if (targetName) {
-        // 如果這個被評價人還沒有評價紀錄陣列，先初始化它
         if (!partnerReviews[targetName]) {
             partnerReviews[targetName] = [];
         }
 
-        // 將新寫好的評價推入該舞者的資料最前端
         partnerReviews[targetName].unshift({
             reviewer: reviewerName,
             rating: rating || "5",
             comment: comment || "這位夥伴很棒！"
         });
 
-        // 🎯 核心需求：評價完畢後，直接動態重導向跳轉到「該名對方的個人檔案頁面」
         return res.redirect(`/profile/${encodeURIComponent(targetName)}`);
     }
 
     res.redirect('/partner');
 });
 
+// --- Mongoose 資料模型 ---
 const userSchema = new mongoose.Schema({
     name: String,
     ratings: [{
@@ -481,21 +444,20 @@ app.post('/users/:id/rate', async (req, res) => {
 
         if (!targetUser) return res.status(404).send("找不到該對象");
 
-        // 1. 推入新評分
         targetUser.ratings.push({ score: Number(score) });
 
-        // 2. 自動計算平均分與總次數
         const totalScore = targetUser.ratings.reduce((sum, r) => sum + r.score, 0);
         targetUser.ratingCount = targetUser.ratings.length;
-        // 四捨五入保留到小數點第一位
         targetUser.averageRating = Number((totalScore / targetUser.ratingCount).toFixed(1));
 
         await targetUser.save();
-        res.redirect('back'); // 重新整理當前頁面
+        res.redirect('back');
     } catch (err) {
         console.error("評分失敗:", err);
         res.status(500).send("評分失敗");
     }
 });
 
-app.listen(3000, () => console.log('DanceHub 伺服器已啟動：http://localhost:3000'));
+// 2. 【關鍵修正】加上 process.env.PORT 相容性
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`DanceHub 伺服器已啟動：http://localhost:${PORT}`));
