@@ -3,7 +3,6 @@ const bodyParser = require('body-parser');
 const app = express();
 const path = require('path');
 const session = require('express-session');
-const mongoose = require('mongoose'); // 1. 【關鍵修正】補上 mongoose 引用
 
 // --- 基礎設定 ---
 app.set('view engine', 'ejs');
@@ -424,40 +423,29 @@ app.post('/submit-review', (req, res) => {
     res.redirect('/partner');
 });
 
-// --- Mongoose 資料模型 ---
-const userSchema = new mongoose.Schema({
-    name: String,
-    ratings: [{
-        score: { type: Number, required: true, min: 1, max: 5 },
-        createdAt: { type: Date, default: Date.now }
-    }],
-    averageRating: { type: Number, default: 0.0 },
-    ratingCount: { type: Number, default: 0 }
-});
+// --- 純記憶體評分暫存（無 Mongoose 依賴） ---
+const userRatings = {};
 
-const User = mongoose.model('User', userSchema);
+app.post('/users/:id/rate', (req, res) => {
+    const userId = req.params.id;
+    const { score } = req.body;
+    const numScore = Number(score);
 
-app.post('/users/:id/rate', async (req, res) => {
-    try {
-        const { score } = req.body;
-        const targetUser = await User.findById(req.params.id);
+    if (!score || isNaN(numScore)) return res.status(400).send("無效的評分");
 
-        if (!targetUser) return res.status(404).send("找不到該對象");
-
-        targetUser.ratings.push({ score: Number(score) });
-
-        const totalScore = targetUser.ratings.reduce((sum, r) => sum + r.score, 0);
-        targetUser.ratingCount = targetUser.ratings.length;
-        targetUser.averageRating = Number((totalScore / targetUser.ratingCount).toFixed(1));
-
-        await targetUser.save();
-        res.redirect('back');
-    } catch (err) {
-        console.error("評分失敗:", err);
-        res.status(500).send("評分失敗");
+    if (!userRatings[userId]) {
+        userRatings[userId] = { ratings: [], averageRating: 0, ratingCount: 0 };
     }
+
+    const userData = userRatings[userId];
+    userData.ratings.push(numScore);
+    userData.ratingCount = userData.ratings.length;
+    
+    const totalScore = userData.ratings.reduce((sum, s) => sum + s, 0);
+    userData.averageRating = Number((totalScore / userData.ratingCount).toFixed(1));
+
+    res.redirect('back');
 });
 
-// 2. 【關鍵修正】加上 process.env.PORT 相容性
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`DanceHub 伺服器已啟動：http://localhost:${PORT}`));
