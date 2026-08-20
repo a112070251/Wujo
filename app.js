@@ -462,4 +462,40 @@ app.post('/submit-review', (req, res) => {
     res.redirect('/partner');
 });
 
+const userSchema = new mongoose.Schema({
+    name: String,
+    ratings: [{
+        score: { type: Number, required: true, min: 1, max: 5 },
+        createdAt: { type: Date, default: Date.now }
+    }],
+    averageRating: { type: Number, default: 0.0 },
+    ratingCount: { type: Number, default: 0 }
+});
+
+const User = mongoose.model('User', userSchema);
+
+app.post('/users/:id/rate', async (req, res) => {
+    try {
+        const { score } = req.body;
+        const targetUser = await User.findById(req.params.id);
+
+        if (!targetUser) return res.status(404).send("找不到該對象");
+
+        // 1. 推入新評分
+        targetUser.ratings.push({ score: Number(score) });
+
+        // 2. 自動計算平均分與總次數
+        const totalScore = targetUser.ratings.reduce((sum, r) => sum + r.score, 0);
+        targetUser.ratingCount = targetUser.ratings.length;
+        // 四捨五入保留到小數點第一位
+        targetUser.averageRating = Number((totalScore / targetUser.ratingCount).toFixed(1));
+
+        await targetUser.save();
+        res.redirect('back'); // 重新整理當前頁面
+    } catch (err) {
+        console.error("評分失敗:", err);
+        res.status(500).send("評分失敗");
+    }
+});
+
 app.listen(3000, () => console.log('DanceHub 伺服器已啟動：http://localhost:3000'));
