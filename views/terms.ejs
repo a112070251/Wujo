@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
+    <%- include('section/head') %>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>服務條款與隱私權政策 - 舞聚 DanceHub</title>
+    <title>服務條款與隱私權政策 - WuJo</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             line-height: 1.7;
             color: #333333;
-            background-color: #FAFAFA;
+            background-color: #FAFAFA !important;
             padding: 40px 20px;
         }
 
@@ -24,7 +25,7 @@
         }
 
         h1 {
-            font-size: 28px;
+            font-size: 26px;
             color: #823A00;
             margin-bottom: 24px;
             border-bottom: 2px solid #F0F0F0;
@@ -32,58 +33,111 @@
         }
 
         h2 {
-            font-size: 20px;
+            font-size: 18px;
             color: #444444;
-            margin-top: 32px;
+            margin-top: 28px;
             margin-bottom: 12px;
         }
 
         p, li {
             font-size: 15px;
             color: #555555;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
 
         ul {
             padding-left: 20px;
+            margin-bottom: 12px;
         }
 
         .back-btn {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             margin-bottom: 20px;
-            color: #823A00;
+            color: #B37A48;
             text-decoration: none;
-            font-weight: 600;
+            font-weight: 700;
+            font-size: 14px;
+            transition: color 0.2s ease;
         }
 
         .back-btn:hover {
-            text-decoration: underline;
+            color: #823A00;
+        }
+
+        .intro-lead {
+            font-size: 15px;
+            color: #444444;
+            font-weight: 500;
+            margin-bottom: 20px;
+            background-color: #FFF3E0;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border-left: 4px solid #CC8C53;
         }
     </style>
 </head>
 <body>
 
     <div class="container">
+        
+        <a href="javascript:history.back()" class="back-btn">
+            <span>←</span> 返回
+        </a>
 
-        <section id="terms">
-            <h2>一、服務條款 (Terms of Service)</h2>
-            <p>歡迎使用「舞聚 DanceHub」（以下簡稱本平台）。當您註冊或使用本平台服務時，即代表您已閱讀、瞭解並同意接受本條款之所有內容：</p>
+        <h1>服務條款與隱私權政策</h1>
+
+        <p class="intro-lead">
+            歡迎您註冊使用【WuJo】（以下簡稱「本服務」）。為保障您的權益，請於完成註冊前詳細閱讀以下內容：
+        </p>
+
+        <section id="term-1">
+            <h2>一、 個人資料之蒐集目的與類別</h2>
             <ul>
-                <li><strong>帳號安全：</strong>使用者有責任維持帳號與密碼的機密安全，並對該帳號進行的所有活動負完全責任。</li>
-                <li><strong>使用規範：</strong>嚴禁利用本平台發布任何違法、不實、誹謗、侵犯他人隱私或版權之內容。</li>
-                <li><strong>場地預約與媒合：</strong>本平台提供練舞場地資訊與舞伴媒合服務，使用者於實體互動時請注意自身安全與財物保管。</li>
+                <li><strong>蒐集目的：</strong>僅用於提供本服務之會員身分驗證、客戶服務、系統通知、服務體驗優化及相關業務聯繫。</li>
+                <li><strong>蒐集類別：</strong>包含但不限於姓名、電子郵件地址、聯絡電話、帳號密碼及其他您於註冊時主動提供之資料。</li>
             </ul>
         </section>
 
-        <section id="privacy">
-            <h2>二、隱私權政策 (Privacy Policy)</h2>
-            <p>我們相當重視您的個人隱私，本政策說明我們如何收集與使用您的個人資料：</p>
+        <section id="term-2">
+            <h2>二、 個人資料利用之期間、地區及對象</h2>
             <ul>
-                <li><strong>資料收集：</strong>當您註冊時，我們會收集您的姓名、電子信箱及相關舞者檔案資料。</li>
-                <li><strong>資料使用：</strong>所收集的資料僅用於提供平台功能、改善使用者體驗及安全驗證，絕不會提供給第三方行銷使用。</li>
-                <li><strong>位置資訊：</strong>若您使用地圖尋找練舞室功能，我們僅在您授權時讀取您的地理位置以顯示周邊教室，不會記錄您的歷史軌跡。</li>
+                <li><strong>期間與地區：</strong>於本服務營運期間內，在提供本服務所必需之合法地區內利用。</li>
+                <li><strong>嚴格使用限制：</strong>本服務承諾絕不將您的個人資料販售、出租、交換、出借或以任何形式提供給第三方，亦不會將您的資料用於本服務以外之其他平台或商業目的。</li>
             </ul>
         </section>
+
+        <section id="term-3">
+            <h2>三、 例外條款（法律規定與安全保護）</h2>
+            <p>除下列狀況外，本服務絕不向第三方揭露您的個人資料：</p>
+            <ul>
+                <li>配合司法機關或相關主管機關依法定程序之調查或要求。</li>
+                <li>為保護本服務、其他使用者或公眾之合法權益或生命財產安全。</li>
+                <li>經您事前明確同意或授權。</li>
+            </ul>
+        </section>
+
+        <section id="term-4">
+            <h2>四、 個人資料之安全保護</h2>
+            <p>本服務採用標準之安全防護機制與加密技術，防止您的個人資料遭未經授權之存取、洩漏、竄改或毀損。</p>
+        </section>
+
+        <section id="term-5">
+            <h2>五、 當事人權利</h2>
+            <p>您得隨時透過本服務之客服管道，針對您所提供的個人資料行使以下權利：</p>
+            <ul>
+                <li>查詢、請求閱覽或請求製給複製本。</li>
+                <li>請求補充或更正。</li>
+                <li>請求停止蒐集、處理、利用或請求刪除帳號及個人資料。</li>
+            </ul>
+        </section>
+
+        <section id="term-6">
+            <h2>六、 同意與修改</h2>
+            <p>當您點選「同意並註冊」或繼續使用本服務時，即視為您已充分閱讀、瞭解並同意接受本條款之全部內容。本服務有權隨時修訂本條款，修訂後將於 App 內公告，不另行個別通知。</p>
+        </section>
+
     </div>
 
 </body>
