@@ -150,7 +150,7 @@
     <div class="login-card">
         
         <div class="login-header">
-            <h1 class="login-logo">WU vedJO</h1>
+            <h1 class="login-logo">WU JO</h1>
             <p class="login-subtitle">進入你的舞蹈與共享空間</p>
         </div>
 
@@ -175,6 +175,64 @@
             還沒有帳號？ <a href="#" class="login-link">立即加入</a>
         </p>
     </div>
+
+    <div class="auth-footer-links">
+    <p class="register-prompt">
+        還沒有帳號嗎？ 
+        <a href="/register" class="auth-link font-bold">立即免費註冊</a>
+    </p>
+
+    <div class="terms-notice">
+        登入或註冊即代表您同意本平台的
+        <a href="/terms" target="_blank" class="terms-link">服務條款</a> 與 
+        <a href="/terms#privacy" target="_blank" class="terms-link">隱私權政策</a>
+    </div>
+</div>
+
+<style>
+    .auth-footer-links {
+        margin-top: 24px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .register-prompt {
+        font-size: 14px;
+        color: #666666;
+    }
+
+    .auth-link {
+        color: #823A00; /* 系統主色焦糖棕 */
+        text-decoration: none;
+        font-weight: 700;
+        margin-left: 4px;
+        transition: color 0.2s ease;
+    }
+
+    .auth-link:hover {
+        color: #CC8C53;
+        text-decoration: underline;
+    }
+
+    .terms-notice {
+        font-size: 12px;
+        color: #999999;
+        line-height: 1.5;
+        border-top: 1px solid #EFEFEF;
+        padding-top: 16px;
+    }
+
+    .terms-link {
+        color: #666666;
+        text-decoration: underline;
+    }
+
+    .terms-link:hover {
+        color: #823A00;
+    }
+</style>
 
 </body>
 </html>

@@ -90,7 +90,20 @@ app.get('/', (req, res) => {
     res.render('index', { featuredPost: allPosts[0], featuredVenue: rooms[0] });
 });
 
-app.get('/login', (req, res) => res.render('login'));
+// 1. 顯示登入頁面（你原本應該已經有了）
+app.get('/login', (req, res) => {
+    res.render('login');
+});
+
+// 2. 新增：顯示註冊頁面
+app.get('/register', (req, res) => {
+    res.render('register');
+});
+
+// 3. 新增：顯示法律條款與隱私權政策頁面
+app.get('/terms', (req, res) => {
+    res.render('terms');
+});
 
 // 登入邏輯
 app.post('/login', (req, res) => {
