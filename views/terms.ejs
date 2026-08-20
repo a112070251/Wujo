@@ -83,7 +83,7 @@
     <div class="container">
 
         <!-- 新增的回上一頁按鈕 -->
-        <a href="javascript:history.back()" class="back-btn">← 回上一頁</a>
+        <a href="/register" onclick="if (document.referrer) { history.back(); return false; }" class="back-btn">← 回上一頁</a>
 
         <h1>服務條款與隱私權政策</h1>
 
