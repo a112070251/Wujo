@@ -130,6 +130,18 @@
         .btn-booking-submit:active {
             transform: scale(0.98);
         }
+        /* 預約表單 */
+        .notice { font-size: 13px; line-height: 1.6; padding: 12px 16px; border-radius: 12px; margin-bottom: 16px; border: 1px solid transparent; }
+        .notice-success { background: #E8F5E9; border-color: #C8E6C9; color: #2E7D32; }
+        .notice-error { background: #FFEBEE; border-color: #FFCDD2; color: #C62828; }
+        .book-field { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+        .book-label { font-size: 13px; font-weight: 700; color: #555555; }
+        .book-input { padding: 12px; border: 1px solid #DDDDDD; border-radius: 12px; font-size: 14px; background: #FFFFFF; }
+        .hour-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 8px; }
+        .hour-chip { text-align: center; padding: 8px 0; border-radius: 10px; font-size: 13px; font-weight: 700; background: #F5EFEA; color: #653600; }
+        .hour-chip.taken { background: #F0F0F0; color: #AAAAAA; text-decoration: line-through; }
+        .book-hint { font-size: 12px; color: #888888; margin-top: 8px; line-height: 1.6; }
+        .btn-booking-submit:disabled { background: #CCCCCC; box-shadow: none; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -168,13 +180,58 @@
                     <hr class="detail-divider">
 
                     <div class="info-section">
-                        <h4 class="info-section-title">🕒 開放預訂時段</h4>
-                        <p class="info-text">每日早上 08:00 - 晚上 22:00（採整點預約制）</p>
-                    </div>
+                        <h4 class="info-section-title">🕒 預訂時段</h4>
+                        <p class="info-text">每日 08:00 - 22:00（整點預約制），最多可預約未來 30 天，單次最長 <%= maxDuration %> 小時。</p>
 
-                    <button onclick="alert('預約功能已送出，請等候教室確認通知！')" class="btn-booking-submit">
-                        立即預訂此場地
-                    </button>
+                        <% if (locals.notice) { %>
+                            <div class="notice notice-<%= notice.type %>" role="status" style="margin-top:12px;"><%= notice.text %></div>
+                        <% } %>
+
+                        <form action="/venues/<%= venue.id %>" method="GET">
+                            <div class="book-field">
+                                <label class="book-label" for="date">選擇日期</label>
+                                <input type="date" id="date" name="date" class="book-input" value="<%= date %>" min="<%= minDate %>" max="<%= maxDate %>" onchange="this.form.submit()">
+                            </div>
+                        </form>
+
+                        <p class="book-hint"><%= dateText %> 的時段（灰色為已被預約或已過）：</p>
+                        <div class="hour-grid">
+                            <% hours.forEach(function(h) { %>
+                                <span class="hour-chip <%= h.available ? '' : 'taken' %>"><%= h.label %></span>
+                            <% }); %>
+                        </div>
+
+                        <% if (locals.user) { %>
+                            <% const freeHours = hours.filter(function(h) { return h.available; }); %>
+                            <% if (freeHours.length > 0) { %>
+                                <form action="/venues/<%= venue.id %>/book" method="POST">
+                                    <input type="hidden" name="date" value="<%= date %>">
+                                    <div class="book-field">
+                                        <label class="book-label" for="startHour">開始時間</label>
+                                        <select id="startHour" name="startHour" class="book-input" required>
+                                            <% freeHours.forEach(function(h) { %>
+                                                <option value="<%= h.hour %>"><%= h.label %></option>
+                                            <% }); %>
+                                        </select>
+                                    </div>
+                                    <div class="book-field">
+                                        <label class="book-label" for="duration">使用時數</label>
+                                        <select id="duration" name="duration" class="book-input" required>
+                                            <% for (let d = 1; d <= maxDuration; d++) { %>
+                                                <option value="<%= d %>"><%= d %> 小時（$ <%= venue.price * d %>）</option>
+                                            <% } %>
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn-booking-submit">確認預訂</button>
+                                    <p class="book-hint">開始前 2 小時內無法取消，請確定時間再送出。</p>
+                                </form>
+                            <% } else { %>
+                                <p class="book-hint">這一天已經沒有可預約的時段，請換一天試試。</p>
+                            <% } %>
+                        <% } else { %>
+                            <p class="book-hint">請先<a href="/login" style="color:#823A00;font-weight:700;">登入</a>才能預訂。</p>
+                        <% } %>
+                    </div>
                 </div>
             </div>
 

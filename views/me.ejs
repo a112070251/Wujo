@@ -407,16 +407,33 @@
                         <h3 class="section-title">📅 近期預約</h3>
                     </div>
                     
-                    <div class="info-card booking-item">
-                        <div class="booking-date-block">
-                            <span class="booking-month">Mar</span>
-                            <span class="booking-day">24</span>
-                        </div>
-                        <div class="booking-details">
-                            <h4>Studio • 18:30</h4>
-                            <p>Kinetics Studio</p>
-                        </div>
-                    </div>
+                    <% if (locals.notice) { %>
+                        <div class="info-card" role="status" style="color: <%= notice.type === 'success' ? '#2E7D32' : '#C62828' %>; font-size: 13px;"><%= notice.text %></div>
+                    <% } %>
+
+                    <% if (locals.bookings && bookings.length > 0) { %>
+                        <% bookings.forEach(function(b) { %>
+                            <div class="info-card booking-item">
+                                <div class="booking-date-block">
+                                    <span class="booking-month"><%= b.month %>月</span>
+                                    <span class="booking-day"><%= b.day %></span>
+                                </div>
+                                <div class="booking-details">
+                                    <h4><%= b.timeText %></h4>
+                                    <p><%= b.venueName %> · $ <%= b.price %></p>
+                                    <% if (b.canCancel) { %>
+                                        <form action="/bookings/<%= b.id %>/cancel" method="POST" onsubmit="return confirm('確定要取消這筆預約嗎？');" style="margin-top:6px;">
+                                            <button type="submit" style="border:1px solid #FFCDD2;background:#fff;color:#C62828;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;">取消預約</button>
+                                        </form>
+                                    <% } else { %>
+                                        <p style="font-size:11px;color:#999;margin-top:4px;">開始前 2 小時內無法取消</p>
+                                    <% } %>
+                                </div>
+                            </div>
+                        <% }); %>
+                    <% } else { %>
+                        <div class="info-card" style="font-size: 13px; color: #888;">目前沒有預約，到<a href="/venues" style="color:#823A00;font-weight:700;">教室列表</a>挑一間吧。</div>
+                    <% } %>
 
                     <!-- 3. 舞者攝影師設定面板 -->
                     <div class="section-title-box with-top-margin">

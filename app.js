@@ -7,6 +7,7 @@ const bcrypt = require('bcryptjs');
 const http = require('http');
 const { Server } = require('socket.io');
 const store = require('./db');
+const bookingRules = require('./bookings');
 
 // --- 基礎設定 ---
 app.set('view engine', 'ejs');
@@ -276,7 +277,24 @@ app.get('/me', (req, res) => {
         req.session.user.photoStyle = "";
     }
     
-    res.render('me', { user: req.session.user });
+    const today = bookingRules.taipeiNow().date;
+    const bookings = Number.isInteger(req.session.user.id)
+        ? store.listUpcomingBookings(req.session.user.id, today)
+            .filter(b => bookingRules.isUpcoming(b))
+            .map(b => ({
+                id: b.id,
+                venueName: rooms[b.room_id] ? rooms[b.room_id].name : '教室',
+                month: Number(b.date.slice(5, 7)),
+                day: Number(b.date.slice(8, 10)),
+                dateText: bookingRules.dateLabel(b.date),
+                timeText: bookingRules.timeRangeLabel(b.start_hour, b.duration),
+                price: b.price,
+                canCancel: bookingRules.canCancel(b)
+            }))
+        : [];
+    const notice = Object.hasOwn(BOOKING_MESSAGES, req.query.msg) ? BOOKING_MESSAGES[req.query.msg] : null;
+
+    res.render('me', { user: req.session.user, bookings, notice });
 });
 
 app.post('/update-photographer', (req, res) => {
@@ -496,13 +514,97 @@ app.get('/venues', (req, res) => {
     res.render('venues_page', { rooms: rooms });
 });
 
+// --- 教室預約 ---
+const BOOKING_MESSAGES = {
+    date: { type: 'error', text: '日期格式不正確，請重新選擇。' },
+    duration: { type: 'error', text: `預約時數必須是 1 到 ${bookingRules.MAX_DURATION} 小時。` },
+    hours: { type: 'error', text: `營業時間是 ${bookingRules.OPEN_HOUR}:00 到 ${bookingRules.CLOSE_HOUR}:00，請選擇時段內的整點。` },
+    past: { type: 'error', text: '這個時段已經過了，請選擇之後的時段。' },
+    toofar: { type: 'error', text: `最多只能預約未來 ${bookingRules.MAX_DAYS_AHEAD} 天內的時段。` },
+    taken: { type: 'error', text: '這個時段剛被別人預約了，請選擇其他時段。' },
+    limit: { type: 'error', text: `你同時最多只能保有 ${bookingRules.MAX_ACTIVE_BOOKINGS} 筆尚未結束的預約。` },
+    error: { type: 'error', text: '預約失敗，請稍後再試。' },
+    booked: { type: 'success', text: '預約成功！' },
+    cancelled: { type: 'success', text: '預約已取消。' },
+    cancel_late: { type: 'error', text: `開始前 ${bookingRules.MIN_CANCEL_HOURS} 小時內無法取消，請直接聯絡教室。` },
+    notfound: { type: 'error', text: '找不到這筆預約。' }
+};
+
+function findRoom(idParam) {
+    if (!/^\d+$/.test(String(idParam))) return null;
+    return rooms[Number(idParam)] || null;
+}
+
 app.get('/venues/:id', (req, res) => {
-    const roomData = rooms[req.params.id]; 
-    if (roomData) {
-        res.render('venues_detail', { venue: roomData }); 
-    } else {
-        res.status(404).send("找不到教室資訊");
+    const room = findRoom(req.params.id);
+    if (!room) return res.status(404).send('找不到教室資訊');
+
+    const now = bookingRules.taipeiNow();
+    const maxDate = bookingRules.addDays(now.date, bookingRules.MAX_DAYS_AHEAD);
+    let date = String(req.query.date || '');
+    if (!bookingRules.isValidDate(date) || date < now.date || date > maxDate) date = now.date;
+
+    const booked = new Set(store.listBookedHours(room.id, date));
+    const hours = [];
+    for (let h = bookingRules.OPEN_HOUR; h < bookingRules.CLOSE_HOUR; h++) {
+        const inFuture = date > now.date || h > now.hour;
+        hours.push({ hour: h, label: String(h).padStart(2, '0') + ':00', available: inFuture && !booked.has(h) });
     }
+
+    const notice = Object.hasOwn(BOOKING_MESSAGES, req.query.msg) ? BOOKING_MESSAGES[req.query.msg] : null;
+
+    res.render('venues_detail', {
+        venue: room,
+        date,
+        dateText: bookingRules.dateLabel(date),
+        minDate: now.date,
+        maxDate,
+        hours,
+        maxDuration: bookingRules.MAX_DURATION,
+        notice
+    });
+});
+
+app.post('/venues/:id/book', (req, res) => {
+    const me = req.session.user;
+    if (!me) return res.redirect('/login');
+
+    const room = findRoom(req.params.id);
+    if (!room) return res.status(404).send('找不到教室資訊');
+
+    const date = String(req.body.date || '');
+    const startHour = /^\d+$/.test(String(req.body.startHour)) ? Number(req.body.startHour) : NaN;
+    const duration = /^\d+$/.test(String(req.body.duration)) ? Number(req.body.duration) : NaN;
+    const back = (code) => res.redirect(`/venues/${room.id}?date=${encodeURIComponent(date.slice(0, 10))}&msg=${code}`);
+
+    const check = bookingRules.validateBooking({ date, startHour, duration });
+    if (!check.ok) return back(check.code);
+
+    const now = bookingRules.taipeiNow();
+    if (store.countActiveBookings(me.id, now.date, now.hour) >= bookingRules.MAX_ACTIVE_BOOKINGS) return back('limit');
+
+    try {
+        store.createBooking(me.id, room.id, date, startHour, duration, room.price * duration);
+    } catch (err) {
+        if (err && (String(err.code).startsWith('SQLITE_CONSTRAINT') || /constraint failed/i.test(String(err.message)))) return back('taken');
+        console.error('預約失敗:', err);
+        return back('error');
+    }
+    res.redirect('/me?msg=booked');
+});
+
+app.post('/bookings/:id/cancel', (req, res) => {
+    const me = req.session.user;
+    if (!me) return res.redirect('/login');
+
+    const id = /^\d+$/.test(req.params.id) ? Number(req.params.id) : NaN;
+    const booking = Number.isInteger(id) ? store.getBooking(id) : null;
+    // 只能取消自己的預約
+    if (!booking || booking.user_id !== me.id) return res.redirect('/me?msg=notfound');
+    if (!bookingRules.canCancel(booking)) return res.redirect('/me?msg=cancel_late');
+
+    store.cancelBooking(id, me.id);
+    res.redirect('/me?msg=cancelled');
 });
 
 app.get('/profile/:username', (req, res) => {
