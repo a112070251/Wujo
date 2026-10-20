@@ -4,7 +4,9 @@ const app = express();
 const path = require('path');
 const session = require('express-session');
 const bcrypt = require('bcryptjs');
-const users = require('./db');
+const http = require('http');
+const { Server } = require('socket.io');
+const store = require('./db');
 
 // --- 基礎設定 ---
 app.set('view engine', 'ejs');
@@ -17,7 +19,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 if (!process.env.SESSION_SECRET && process.env.NODE_ENV === 'production') {
     throw new Error('請設定環境變數 SESSION_SECRET');
 }
-app.use(session({
+const sessionMiddleware = session({
     secret: process.env.SESSION_SECRET || 'dev-only-secret-change-me',
     resave: false,
     saveUninitialized: false,
@@ -26,7 +28,8 @@ app.use(session({
         sameSite: 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 天
     }
-}));
+});
+app.use(sessionMiddleware);
 
 const rooms = [
     { id: 0, name: "大安旗艦館", dist: "大安區", price: 500, lat: 25.0339, lng: 121.5434, image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=500&auto=format&fit=crop" },
@@ -80,16 +83,59 @@ const blacklistUsers = [
     }
 ];
 
-const allPosts = [
-    { id: "1", author: "小雅", avatar: "小雅", content: "4月練舞，北車，缺三人。", time: "2 小時前", hashtags: ["找比賽", "K-Pop"], lastMsg: "好喔！妳平常都在哪邊練習？" },
-    { id: "2", author: "小新", avatar: "小新", content: "12月，風格偏HipHop，希望有比賽經驗。", time: "5 小時前", hashtags: ["練基礎", "HipHop", "找比賽"], lastMsg: "那明天 18:00 見！" },
-    { id: "3", author: "阿強", avatar: "阿強", content: "想找人一起在西門町拍 Dance Cover！", time: "10 小時前", hashtags: ["拍片", "街舞", "HipHop"], lastMsg: "嘿，有興趣一起拍片嗎？" }
-];
+// --- 貼文與訊息的共用設定 ---
+const POST_TAGS = ['找比賽', '練基礎', '拍片', 'K-Pop', 'HipHop', '街舞', 'Breaking', 'Popping'];
+const MAX_POST_LENGTH = 200;
+const MAX_MESSAGE_LENGTH = 500;
+const POST_ERRORS = {
+    empty: '貼文內容不能是空白',
+    toolong: `貼文最多 ${MAX_POST_LENGTH} 個字`
+};
+
+// 資料庫存的是 UTC 時間字串（YYYY-MM-DD HH:MM:SS）
+function parseDbTime(sqlUtc) {
+    return new Date(String(sqlUtc).replace(' ', 'T') + 'Z');
+}
+
+function timeAgo(sqlUtc) {
+    const t = parseDbTime(sqlUtc);
+    if (isNaN(t)) return '';
+    const diff = Math.max(0, Math.floor((Date.now() - t.getTime()) / 1000));
+    if (diff < 60) return '剛剛';
+    if (diff < 3600) return `${Math.floor(diff / 60)} 分鐘前`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} 小時前`;
+    if (diff < 7 * 86400) return `${Math.floor(diff / 86400)} 天前`;
+    return t.toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
+}
+
+function formatClock(sqlUtc) {
+    const t = parseDbTime(sqlUtc);
+    if (isNaN(t)) return '';
+    return t.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Taipei' });
+}
+
+function toPostView(row) {
+    return {
+        id: row.id,
+        authorId: row.author_id,
+        author: row.author_name,
+        content: row.content,
+        time: timeAgo(row.created_at),
+        hashtags: row.tags
+    };
+}
+
+// 已被停權（檢舉 5 次以上）的帳號，即使 session 還在也不能發文或傳訊
+function isBanned(user) {
+    return getReportCount(user.name) >= 5;
+}
 
 // --- 3. 全域變數中間件 ---
 app.use((req, res, next) => {
-    res.locals.user = req.session.user || null;
-    res.locals.hasNewMsg = !!req.session.user;
+    const sessUser = req.session.user;
+    res.locals.user = sessUser || null;
+    res.locals.unreadCount = (sessUser && Number.isInteger(sessUser.id)) ? store.countUnread(sessUser.id) : 0;
+    res.locals.hasNewMsg = res.locals.unreadCount > 0;
     next();
 });
 
@@ -97,7 +143,11 @@ app.use((req, res, next) => {
 
 // 首頁路由
 app.get('/', (req, res) => {
-    res.render('index', { featuredPost: allPosts[0], featuredVenue: rooms[0] });
+    const latest = store.getLatestPost();
+    res.render('index', {
+        featuredPost: latest ? toPostView(latest) : null,
+        featuredVenue: rooms[0]
+    });
 });
 
 // 1. 顯示登入頁面
@@ -141,7 +191,7 @@ app.post('/login', async (req, res) => {
     if (!username || !password) return fail(400, '請輸入帳號與密碼');
 
     try {
-        const account = users.findUserByLogin(username);
+        const account = store.findUserByLogin(username);
         const passwordOk = await bcrypt.compare(password, account ? account.password_hash : DUMMY_HASH);
 
         if (!account || !passwordOk) return fail(401, '帳號或密碼錯誤');
@@ -187,12 +237,12 @@ app.post('/register', async (req, res) => {
     if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail(400, '請輸入有效的電子信箱');
     if (password.length < 6) return fail(400, '密碼至少需要 6 個字元');
     if (Buffer.byteLength(password, 'utf8') > 72) return fail(400, '密碼過長，請縮短一些');
-    if (users.findUserByName(name)) return fail(409, '這個暱稱已被使用');
-    if (users.findUserByEmail(email)) return fail(409, '這個電子信箱已經註冊過了');
+    if (store.findUserByName(name)) return fail(409, '這個暱稱已被使用');
+    if (store.findUserByEmail(email)) return fail(409, '這個電子信箱已經註冊過了');
 
     try {
         const passwordHash = await bcrypt.hash(password, 10);
-        users.createUser(name, email, passwordHash);
+        store.createUser(name, email, passwordHash);
         return res.redirect('/login?registered=1');
     } catch (err) {
         if (err && String(err.code).startsWith('SQLITE_CONSTRAINT')) {
@@ -280,28 +330,85 @@ app.post('/submit-blacklist', (req, res) => {
 });
 
 app.get('/partner', (req, res) => {
-    const currentTag = req.query.tag || '全部';
-    let filteredPosts = (currentTag !== '全部') ? allPosts.filter(p => p.hashtags.includes(currentTag)) : allPosts;
-    res.render('partner_page', { posts: filteredPosts, currentTag: currentTag });
+    const currentTag = POST_TAGS.includes(req.query.tag) ? req.query.tag : '全部';
+    const q = String(req.query.q || '').trim().slice(0, 50);
+    const posts = store
+        .listPosts({ tag: currentTag === '全部' ? '' : currentTag, q })
+        .map(toPostView);
+
+    res.render('partner_page', {
+        posts,
+        currentTag,
+        q,
+        tags: POST_TAGS,
+        maxLength: MAX_POST_LENGTH,
+        error: Object.hasOwn(POST_ERRORS, req.query.error) ? POST_ERRORS[req.query.error] : null
+    });
+});
+
+app.post('/posts', (req, res) => {
+    if (!req.session.user) return res.redirect('/login');
+    if (isBanned(req.session.user)) return res.status(403).send('您的帳號已被停權，無法發文');
+
+    const content = String(req.body.content || '').trim();
+    const rawTags = req.body.tags || [];
+    const tags = [...new Set((Array.isArray(rawTags) ? rawTags : [rawTags]).filter(t => POST_TAGS.includes(t)))].slice(0, 5);
+
+    if (!content) return res.redirect('/partner?error=empty');
+    if (content.length > MAX_POST_LENGTH) return res.redirect('/partner?error=toolong');
+
+    store.createPost(req.session.user.id, content, tags);
+    res.redirect('/partner');
 });
 
 app.get('/messages', (req, res) => {
     if (!req.session.user) return res.redirect('/login');
-    const chatList = allPosts.map(post => ({ id: post.id, name: post.author, lastMsg: post.lastMsg, time: post.time, avatar: post.author }));
-    res.render('messages', { chatList: chatList });
+    const me = req.session.user.id;
+
+    const chatList = store.listConversations(me).map(c => ({
+        id: c.partner_id,
+        name: c.partner_name,
+        avatar: c.partner_name,
+        lastMsg: (c.last_sender_id === me ? '你：' : '') + c.last_text,
+        time: timeAgo(c.last_at),
+        unread: c.unread
+    }));
+    res.render('messages', { chatList });
 });
 
+// 聊天室：:id 是對方的使用者 ID
 app.get('/chat/:id', (req, res) => {
     if (!req.session.user) return res.redirect('/login');
-    const post = allPosts.find(p => p.id === req.params.id);
-    const chatTarget = post ? { name: post.author, avatar: post.author } : { name: "測試舞者", avatar: "avatar_seed_123" };
-    res.render('chat', { chatTarget }); 
+    const me = req.session.user.id;
+
+    const targetId = Number(req.params.id);
+    const target = Number.isInteger(targetId) ? store.findUserById(targetId) : null;
+    if (!target) return res.status(404).send('找不到這位使用者');
+    if (target.id === me) return res.redirect('/messages');
+
+    // 開啟聊天室視為已讀，導覽列的未讀數也要同步
+    store.markConversationRead(me, target.id);
+    res.locals.unreadCount = store.countUnread(me);
+    res.locals.hasNewMsg = res.locals.unreadCount > 0;
+
+    const messages = store.getConversation(me, target.id).map(m => ({
+        id: m.id,
+        senderId: m.sender_id,
+        text: m.text,
+        time: formatClock(m.created_at)
+    }));
+
+    res.render('chat', {
+        chatTarget: { id: target.id, name: target.name, avatar: target.name },
+        messages,
+        currentUserId: me,
+        maxLength: MAX_MESSAGE_LENGTH
+    });
 });
 
+// 舊連結相容：沒指定對象時回到訊息列表
 app.get('/chat', (req, res) => {
-    if (!req.session.user) return res.redirect('/login');
-    const chatTarget = { name: allPosts[0].author, avatar: allPosts[0].author };
-    res.render('chat', { chatTarget });
+    res.redirect(req.session.user ? '/messages' : '/login');
 });
 
 app.get('/api/current-location', (req, res) => {
@@ -356,18 +463,21 @@ app.get('/profile/:username', (req, res) => {
         return res.redirect('/login');
     }
 
-    const targetName = req.params.username;
-    const reports = userReportsCounter[targetName] || 0;
-    
+    const target = store.findUserByName(req.params.username);
+    if (!target) return res.status(404).send('找不到這位舞者');
+
+    // 只挑要顯示的欄位，絕對不要把整列使用者資料（含密碼雜湊）傳進模板
     const profileData = {
-        name: targetName,
-        avatar: targetName,
-        danceType: targetName === "阿強" ? "Breaking / Popping" : "K-Pop / HipHop",
-        intro: "嗨！我是 " + targetName + "。希望能找到志同道合的舞伴一起進步，歡迎私訊我約練喔！",
-        reportCount: reports
+        id: target.id,
+        name: target.name,
+        avatar: target.name,
+        danceType: '舞者',
+        intro: "嗨！我是 " + target.name + "。希望能找到志同道合的舞伴一起進步，歡迎私訊我約練喔！",
+        reportCount: getReportCount(target.name),
+        postCount: store.countPostsByUser(target.id)
     };
 
-    const reviews = partnerReviews[targetName] || [];
+    const reviews = partnerReviews[target.name] || [];
 
     res.render('profile', {
         profile: profileData,
@@ -505,5 +615,72 @@ app.post('/users/:id/rate', (req, res) => {
     res.redirect('back');
 });
 
+// --- 即時私訊（Socket.io）---
+const server = http.createServer(app);
+const io = new Server(server);
+
+// Socket 與網頁共用同一份 session；身分一律以 session 為準，不信任前端傳來的使用者 ID
+io.engine.use(sessionMiddleware);
+
+io.use((socket, next) => {
+    const sessUser = socket.request.session && socket.request.session.user;
+    if (!sessUser || !Number.isInteger(sessUser.id)) return next(new Error('unauthorized'));
+    if (isBanned(sessUser)) return next(new Error('banned'));
+    socket.data.userId = sessUser.id;
+    next();
+});
+
+io.on('connection', (socket) => {
+    const me = socket.data.userId;
+    // 每位使用者一個個人房間：同一帳號開多個分頁都收得到
+    socket.join(`user:${me}`);
+
+    socket.on('send_message', (payload, ack) => {
+        const reply = typeof ack === 'function' ? ack : () => {};
+        try {
+            const toId = Number(payload && payload.to);
+            const text = String((payload && payload.text) || '').trim();
+
+            if (!Number.isInteger(toId) || toId === me || !store.findUserById(toId)) {
+                return reply({ ok: false, error: '無法傳送給這位使用者' });
+            }
+            if (!text) return reply({ ok: false, error: '訊息不能是空白' });
+            if (text.length > MAX_MESSAGE_LENGTH) {
+                return reply({ ok: false, error: `訊息最多 ${MAX_MESSAGE_LENGTH} 個字` });
+            }
+
+            const msg = store.createMessage(me, toId, text);
+            const out = {
+                id: msg.id,
+                senderId: me,
+                receiverId: toId,
+                text: msg.text,
+                time: formatClock(msg.created_at)
+            };
+
+            io.to(`user:${toId}`).emit('receive_message', out);
+            socket.to(`user:${me}`).emit('message_sent', out); // 同帳號的其他分頁同步顯示
+            reply({ ok: true, message: out });
+        } catch (err) {
+            console.error('傳送訊息失敗:', err);
+            reply({ ok: false, error: '傳送失敗，請稍後再試' });
+        }
+    });
+
+    // 對方正開著聊天室時，收到訊息即標記為已讀
+    socket.on('mark_read', (payload) => {
+        const fromId = Number(payload && payload.from);
+        if (Number.isInteger(fromId)) store.markConversationRead(me, fromId);
+    });
+});
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`DanceHub 伺服器已啟動：http://localhost:${PORT}`));
+server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.error(`埠 ${PORT} 已被占用，請先關閉舊的伺服器（例如 Stop-Process -Name node -Force）再重試。`);
+    } else {
+        console.error('伺服器錯誤:', err);
+    }
+    process.exit(1);
+});
+server.listen(PORT, () => console.log(`DanceHub 伺服器已啟動：http://localhost:${PORT}`));

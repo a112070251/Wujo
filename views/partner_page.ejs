@@ -25,7 +25,165 @@
             padding-bottom: 90px;
         }
 
-        /* 舞風篩選器滾動條容器 */
+        /* ---------- 發文區 ---------- */
+        .compose-card {
+            display: block;
+            background-color: #FFFFFF;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid #EFEFEF;
+        }
+
+        .compose-title {
+            font-size: 15px;
+            font-weight: 900;
+            color: #222222;
+            margin-bottom: 12px;
+        }
+
+        .compose-textarea {
+            width: 100%;
+            height: 84px;
+            border-radius: 14px;
+            border: 1px solid #EFEFEF;
+            background-color: #FAFAFA;
+            padding: 12px 16px;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: none;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .compose-textarea:focus {
+            border-color: #823A00;
+            background-color: #FFFFFF;
+        }
+
+        .compose-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 6px 4px 12px 4px;
+            font-size: 12px;
+            color: #999999;
+        }
+
+        .compose-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .tag-checkbox {
+            display: none;
+        }
+
+        .tag-label {
+            display: inline-block;
+            font-size: 12px;
+            background: #F0F0F0;
+            padding: 6px 12px;
+            border-radius: 20px;
+            color: #555555;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .tag-checkbox:checked + .tag-label {
+            background: #F5EFEA;
+            color: #823A00;
+            border-color: #B37A48;
+            font-weight: 700;
+        }
+
+        .btn-post {
+            width: 100%;
+            background-color: #823A00;
+            color: #FFFFFF;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 0;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+
+        .btn-post:hover {
+            opacity: 0.9;
+        }
+
+        .login-prompt {
+            display: block;
+            text-align: center;
+            background-color: #FFFFFF;
+            border: 1px dashed #DDDDDD;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #666666;
+        }
+
+        .login-prompt a {
+            color: #823A00;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .form-error {
+            font-size: 13px;
+            line-height: 1.5;
+            padding: 10px 14px;
+            border-radius: 12px;
+            margin-bottom: 14px;
+            background-color: #FFEBEE;
+            border: 1px solid #FFCDD2;
+            color: #C62828;
+        }
+
+        /* ---------- 搜尋列 ---------- */
+        .search-form {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .search-input {
+            flex: 1;
+            background-color: #FFFFFF;
+            border: 1px solid #EFEFEF;
+            border-radius: 12px;
+            padding: 10px 18px;
+            font-size: 14px;
+            outline: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            border-color: #823A00;
+        }
+
+        .btn-search {
+            background-color: #823A00;
+            color: #FFFFFF;
+            border: none;
+            border-radius: 12px;
+            padding: 0 22px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* 標籤篩選滾動條容器 */
         .filter-scroll-container {
             display: flex !important;
             flex-direction: row !important;
@@ -68,14 +226,13 @@
             color: white !important;
         }
 
-        /* 舞伴卡片列表 */
+        /* ---------- 貼文卡片列表 ---------- */
         .partner-list {
             display: flex;
             flex-direction: column;
             gap: 16px;
         }
 
-        /* 獨立舞伴卡片 (圓角與陰影同步找攝影的 venue-card) */
         .partner-card {
             background-color: #FFFFFF;
             border-radius: 20px;
@@ -92,9 +249,9 @@
             border-color: rgba(130, 58, 0, 0.2);
         }
 
-        /* 卡片上方內距 */
         .partner-card-inner {
             padding: 16px;
+            flex: 1;
         }
 
         .partner-header {
@@ -104,7 +261,6 @@
             margin-bottom: 14px;
         }
 
-        /* 🟢 點擊頭像/名字跳轉的超連結樣式，移除預設底線並微調點擊縮放 */
         .profile-link {
             text-decoration: none;
             color: inherit;
@@ -118,8 +274,8 @@
         }
 
         .avatar-border {
-            width: 64px;
-            height: 64px;
+            width: 56px;
+            height: 56px;
             border-radius: 50%;
             padding: 2px;
             background: linear-gradient(135deg, #B37A48 0%, #823A00 100%);
@@ -137,74 +293,64 @@
         }
 
         .partner-name {
-            font-size: 17px;
+            font-size: 16px;
             font-weight: 900;
             color: #222222;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
-        .partner-dance-tag {
+        .post-time {
             font-size: 11px;
-            font-weight: 700;
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 6px;
-            background-color: #FFF3E0;
-            color: #E65100;
-            text-transform: uppercase;
-        }
-
-        /* 內文區塊 */
-        .partner-body {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .info-sub-box {
-            background-color: #FAFAFA;
-            border-radius: 12px;
-            padding: 12px;
-            border: 1px solid #F5F5F5;
-        }
-
-        .info-label {
-            font-size: 11px;
-            font-weight: 700;
             color: #A0A0A0;
-            margin-bottom: 4px;
-        }
-
-        .info-content {
-            font-size: 13px;
-            color: #444444;
-            line-height: 1.5;
             font-weight: 500;
         }
 
-        /* 誠信小字 */
-        .meta-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 12px;
-            color: #666666;
-            padding: 0 4px;
-        }
-        
-        .report-count-zero {
-            color: #4CAF50;
-            font-weight: 700;
+        .post-content {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #333333;
+            font-weight: 500;
+            margin-bottom: 12px;
+            word-break: break-word;
+            white-space: pre-wrap;
         }
 
-        /* 底部按鈕群組區塊 (同步找攝影的下緣灰色分隔帶) */
+        .hashtag-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .hashtag {
+            font-size: 11px;
+            background-color: rgba(130, 58, 0, 0.06);
+            color: #823A00;
+            padding: 3px 10px;
+            border-radius: 8px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .hashtag:hover {
+            background-color: rgba(130, 58, 0, 0.12);
+        }
+
+        /* 底部按鈕群組區塊 */
         .partner-actions {
             background: #FAFAFA;
             border-top: 1px solid #F0F0F0;
             padding: 12px 16px;
             display: flex;
             justify-content: flex-end;
+            align-items: center;
             gap: 10px;
+        }
+
+        .own-post-note {
+            margin-right: auto;
+            font-size: 12px;
+            color: #B37A48;
+            font-weight: 700;
         }
 
         .btn-action {
@@ -236,179 +382,163 @@
         .btn-chat:hover {
             opacity: 0.9;
         }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px 20px;
+            color: #777777;
+            font-size: 14px;
+            line-height: 1.8;
+            background: white;
+            border-radius: 20px;
+            border: 1px solid #EFEFEF;
+        }
     </style>
 </head>
 <body>
 
     <%- include('section/nav') %>
 
+    <%
+        // 產生保留目前搜尋條件的篩選連結
+        const buildUrl = function(tag) {
+            const parts = [];
+            if (tag !== '全部') parts.push('tag=' + encodeURIComponent(tag));
+            if (q) parts.push('q=' + encodeURIComponent(q));
+            return '/partner' + (parts.length ? '?' + parts.join('&') : '');
+        };
+    %>
+
     <main class="main-content">
         <div class="container">
-            
+
             <div class="page-header" style="margin-bottom: 20px;">
                 <h2 style="font-size: 22px; font-weight: 900; color: #222; margin: 0;">找舞伴</h2>
             </div>
 
-            <!-- 選項區 -->
+            <!-- 發文區：登入後才能發文 -->
+            <% if (user) { %>
+                <section class="compose-card">
+                    <h3 class="compose-title">✍️ 發佈徵舞伴貼文</h3>
+
+                    <% if (error) { %>
+                        <p class="form-error" role="alert"><%= error %></p>
+                    <% } %>
+
+                    <form action="/posts" method="POST">
+                        <textarea name="content" id="postContent" class="compose-textarea" maxlength="<%= maxLength %>" placeholder="例如：4月練舞，北車，缺三人。" required></textarea>
+                        <div class="compose-meta">
+                            <span>選擇標籤（最多 5 個）</span>
+                            <span><span id="charCount">0</span> / <%= maxLength %></span>
+                        </div>
+
+                        <div class="compose-tags">
+                            <% tags.forEach(function(tag, i) { %>
+                                <input type="checkbox" name="tags" value="<%= tag %>" id="composeTag<%= i %>" class="tag-checkbox">
+                                <label for="composeTag<%= i %>" class="tag-label">#<%= tag %></label>
+                            <% }); %>
+                        </div>
+
+                        <button type="submit" class="btn-post">發佈貼文</button>
+                    </form>
+                </section>
+            <% } else { %>
+                <p class="login-prompt">想找舞伴嗎？<a href="/login">登入</a>後就可以發佈貼文、私訊大家。</p>
+            <% } %>
+
+            <!-- 搜尋 -->
+            <form action="/partner" method="GET" class="search-form">
+                <% if (currentTag !== '全部') { %>
+                    <input type="hidden" name="tag" value="<%= currentTag %>">
+                <% } %>
+                <input type="text" name="q" value="<%= q %>" placeholder="搜尋貼文內容或舞者名稱..." class="search-input" maxlength="50">
+                <button type="submit" class="btn-search">搜尋</button>
+            </form>
+
+            <!-- 標籤篩選 -->
             <div class="filter-scroll-container">
-                <button class="filter-chip" data-type="all">全部舞風</button>
-                <button class="filter-chip" data-type="Hip-Hop">Hip-Hop</button>
-                <button class="filter-chip" data-type="Popping">Popping</button>
-                <button class="filter-chip" data-type="Locking">Locking</button>
-                <button class="filter-chip" data-type="Breaking">Breaking</button>
-                <button class="filter-chip" data-type="House">House</button>
+                <a href="<%= buildUrl('全部') %>" class="filter-chip <%= currentTag === '全部' ? 'active' : '' %>">全部</a>
+                <% tags.forEach(function(tag) { %>
+                    <a href="<%= buildUrl(tag) %>" class="filter-chip <%= currentTag === tag ? 'active' : '' %>">#<%= tag %></a>
+                <% }); %>
             </div>
 
             <div class="partner-list">
-
-                <% if (typeof developers !== 'undefined' && developers.length > 0) { %>
-                    <% developers.forEach(user => { %>
+                <% if (posts.length > 0) { %>
+                    <% posts.forEach(function(post) { %>
                         <div class="partner-card">
                             <div class="partner-card-inner">
                                 <div class="partner-header">
-                                    <!-- 🟢 核心修正：將頭像與名字打包進 profile 動態路由連結中 -->
-                                    <a href="/profile/<%= encodeURIComponent(user.name) %>" class="profile-link">
+                                    <a href="/profile/<%= encodeURIComponent(post.author) %>" class="profile-link">
                                         <div class="avatar-border">
-                                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= user.avatar %>" class="partner-avatar" alt="avatar">
+                                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= encodeURIComponent(post.author) %>" class="partner-avatar" alt="avatar">
                                         </div>
                                         <div>
-                                            <h3 class="partner-name"><%= user.name %></h3>
-                                            <span class="partner-dance-tag"><%= user.danceType || '未填寫' %></span>
+                                            <h3 class="partner-name"><%= post.author %></h3>
+                                            <span class="post-time"><%= post.time %></span>
                                         </div>
                                     </a>
                                 </div>
 
-                                <div class="partner-body">
-                                    <div class="info-sub-box">
-                                        <p class="info-label">個人介紹</p>
-                                        <p class="info-content"><%= user.intro || '這位舞者很神秘，還沒有填寫自我介紹喔！' %></p>
+                                <p class="post-content"><%= post.content %></p>
+
+                                <% if (post.hashtags.length > 0) { %>
+                                    <div class="hashtag-container">
+                                        <% post.hashtags.forEach(function(tag) { %>
+                                            <a href="<%= buildUrl(tag) %>" class="hashtag">#<%= tag %></a>
+                                        <% }); %>
                                     </div>
-                                    <div class="meta-row">
-                                        <span>信用紀錄</span>
-                                        <span>累計檢舉次數：<span class="report-count-zero">0 次</span></span>
-                                    </div>
-                                </div>
+                                <% } %>
                             </div>
 
                             <div class="partner-actions">
-                                <!-- 🟢 同步修正：讓評價按鈕也可以精準帶到該舞者的名字 -->
-                                <a href="/review?target=<%= encodeURIComponent(user.name) %>" class="btn-action btn-review">⭐️ 評價</a>
-                                <a href="/chat/<%= user.id %>" class="btn-action btn-chat">💬 私訊</a>
+                                <% if (user && user.id === post.authorId) { %>
+                                    <span class="own-post-note">這是你的貼文</span>
+                                <% } else { %>
+                                    <a href="/review?target=<%= encodeURIComponent(post.author) %>" class="btn-action btn-review">⭐️ 評價</a>
+                                    <a href="/chat/<%= post.authorId %>" class="btn-action btn-chat">💬 私訊</a>
+                                <% } %>
                             </div>
                         </div>
-                    <% }) %>
+                    <% }); %>
                 <% } else { %>
-                    
-                    <!-- 預設 Mock 舞者 1：hua -->
-                    <div class="partner-card" data-dance="K-Pop,Hip-Hop">
-                        <div class="partner-card-inner">
-                            <div class="partner-header">
-                                <!-- 🟢 核心修正：打包動態連結至 /profile/hua -->
-                                <a href="/profile/hua" class="profile-link">
-                                    <div class="avatar-border">
-                                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Hua" class="partner-avatar" alt="avatar">
-                                    </div>
-                                    <div>
-                                        <h3 class="partner-name">hua</h3>
-                                        <span class="partner-dance-tag">K-Pop / Hip-Hop</span>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="partner-body">
-                                <div class="info-sub-box">
-                                    <p class="info-label">個人介紹</p>
-                                    <p class="info-content">"嗨！我是hua。希望能找到志同道合的舞伴一起進步，歡迎私訊我約練喔！"</p>
-                                </div>
-                                <div class="meta-row">
-                                    <span>信用紀錄</span>
-                                    <span>累計檢舉次數：<span class="report-count-zero">0 次</span></span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="partner-actions">
-                            <!-- 🟢 同步修正：動態帶入評價參數 -->
-                            <a href="/review?target=hua" class="btn-action btn-review">⭐️ 評價</a>
-                            <a href="/chat/1" class="btn-action btn-chat">💬 私訊</a>
-                        </div>
+                    <div class="empty-state">
+                        <% if (q || currentTag !== '全部') { %>
+                            🔍 找不到符合條件的貼文，換個標籤或關鍵字試試看。<br>
+                            <a href="/partner" style="color: #823A00; font-weight: 700; text-decoration: none;">清除篩選</a>
+                        <% } else { %>
+                            📭 目前還沒有人發佈貼文，成為第一個吧！
+                        <% } %>
                     </div>
-
-                    <!-- 預設 Mock 舞者 2：小明 -->
-                    <div class="partner-card" data-dance="Popping,Locking">
-                        <div class="partner-card-inner">
-                            <div class="partner-header">
-                                <!-- 🟢 核心修正：打包動態連結至 /profile/小明 -->
-                                <a href="/profile/%E5%B0%8F%E6%98%8E" class="profile-link">
-                                    <div class="avatar-border">
-                                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Ming" class="partner-avatar" alt="avatar">
-                                    </div>
-                                    <div>
-                                        <h3 class="partner-name">小明</h3>
-                                        <span class="partner-dance-tag">Popping / Locking</span>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="partner-body">
-                                <div class="info-sub-box">
-                                    <p class="info-label">個人介紹</p>
-                                    <p class="info-content">"目前固定在北車和西門练舞，希望能找拍子穩的夥伴一起排舞或 Cypher！"</p>
-                                </div>
-                                <div class="meta-row">
-                                    <span>信用紀錄</span>
-                                    <span>累計檢舉次數：<span class="report-count-zero">0 次</span></span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="partner-actions">
-                            <!-- 🟢 同步修正：動態帶入評價參數 -->
-                            <a href="/review?target=%E5%B0%8F%E6%98%8E" class="btn-action btn-review">⭐️ 評價</a>
-                            <a href="/chat/2" class="btn-action btn-chat">💬 私訊</a>
-                        </div>
-                    </div>
-
                 <% } %>
-
             </div>
+
         </div>
     </main>
 
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const chips = document.querySelectorAll(".filter-chip");
-            const cards = document.querySelectorAll(".partner-card");
+        // 字數計數與標籤上限（伺服器端也會再檢查一次）
+        (function () {
+            const textarea = document.getElementById('postContent');
+            const counter = document.getElementById('charCount');
+            if (textarea && counter) {
+                const update = () => { counter.textContent = textarea.value.length; };
+                textarea.addEventListener('input', update);
+                update();
+            }
 
-            const urlParams = new URLSearchParams(window.location.search);
-            const currentType = urlParams.get("danceType") || "all";
-
-            chips.forEach(chip => {
-                if (chip.getAttribute("data-type") === currentType) {
-                    chip.classList.add("active");
-                } else {
-                    chip.classList.remove("active");
-                }
-
-                chip.addEventListener("click", () => {
-                    const selectedType = chip.getAttribute("data-type");
-                    if (selectedType === "all") {
-                        window.location.href = window.location.pathname;
-                    } else {
-                        window.location.href = `?danceType=${encodeURIComponent(selectedType)}`;
+            const boxes = document.querySelectorAll('.compose-tags .tag-checkbox');
+            boxes.forEach(box => {
+                box.addEventListener('change', () => {
+                    const checked = document.querySelectorAll('.compose-tags .tag-checkbox:checked');
+                    if (checked.length > 5) {
+                        box.checked = false;
+                        alert('最多只能選 5 個標籤');
                     }
                 });
             });
-
-            if (window.location.search && cards.length > 0) {
-                cards.forEach(card => {
-                    const cardDance = card.getAttribute("data-dance");
-                    if (cardDance) {
-                        if (currentType === "all" || cardDance.toLowerCase().includes(currentType.toLowerCase())) {
-                            card.style.display = "flex";
-                        } else {
-                            card.style.display = "none";
-                        }
-                    }
-                });
-            }
-        });
+        })();
     </script>
 </body>
 </html>

@@ -147,6 +147,47 @@
             line-height: 1.5;
             font-weight: 500;
         }
+
+        /* 有未讀訊息時：預覽文字加粗，頭貼右上角顯示未讀數 */
+        .chat-item.has-unread .chat-preview {
+            color: #222222;
+            font-weight: 800;
+        }
+
+        .unread-badge {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 5px;
+            border-radius: 10px;
+            background-color: #D32F2F;
+            border: 2px solid #FFFFFF;
+            color: #FFFFFF;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 16px;
+            text-align: center;
+        }
+
+        .empty-hint {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px;
+            color: #777;
+            font-size: 14px;
+            line-height: 1.8;
+            background: white;
+            border-radius: 20px;
+            border: 1px solid #EFEFEF;
+        }
+
+        .empty-hint a {
+            color: #823A00;
+            font-weight: 700;
+            text-decoration: none;
+        }
     </style>
 </head>
 <body>
@@ -165,13 +206,15 @@
             <div class="chat-list-grid">
                 <% if (typeof chatList !== 'undefined' && chatList.length > 0) { %>
                     <% chatList.forEach(chat => { %>
-                        <a href="/chat/<%= chat.id %>" class="chat-item">
-                            
+                        <a href="/chat/<%= chat.id %>" class="chat-item <%= chat.unread > 0 ? 'has-unread' : '' %>">
+
                             <div class="avatar-container">
                                 <div class="chat-avatar-border">
-                                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= chat.avatar %>" class="chat-avatar" alt="使用者頭像">
+                                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= encodeURIComponent(chat.avatar) %>" class="chat-avatar" alt="使用者頭像">
                                 </div>
-                                <span class="status-dot"></span>
+                                <% if (chat.unread > 0) { %>
+                                    <span class="unread-badge"><%= chat.unread > 99 ? '99+' : chat.unread %></span>
+                                <% } %>
                             </div>
                             
                             <div class="chat-info">
@@ -187,8 +230,9 @@
                         </a>
                     <% }) %>
                 <% } else { %>
-                    <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #777; font-size: 14px; background: white; border-radius: 20px; border: 1px solid #EFEFEF;">
-                        📭 目前沒有任何私訊對話紀錄
+                    <div class="empty-hint">
+                        📭 目前沒有任何私訊對話紀錄<br>
+                        到 <a href="/partner">找舞伴</a> 看看大家的貼文，找個人聊聊吧！
                     </div>
                 <% } %>
             </div>

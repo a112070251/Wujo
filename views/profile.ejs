@@ -407,13 +407,19 @@
                         </div>
                     </div>
 
+                    <% if (user && user.id === profile.id) { %>
+                    <div class="action-group">
+                        <p style="text-align: center; font-size: 13px; color: #B37A48; font-weight: 700;">這是你自己的個人檔案</p>
+                    </div>
+                    <% } else { %>
                     <div class="action-group">
                         <div class="action-row-main">
-                            <a href="/chat/<%= profile.name %>" class="btn-primary-dm">預約 / 私訊</a>
-                            <a href="/blacklist?target=<%= profile.name %>" class="btn-secondary-report">檢舉</a>
+                            <a href="/chat/<%= profile.id %>" class="btn-primary-dm">預約 / 私訊</a>
+                            <a href="/blacklist?target=<%= encodeURIComponent(profile.name) %>" class="btn-secondary-report">檢舉</a>
                         </div>
-                        <a href="/review?target=<%= profile.name %>" class="btn-accent-review">給予評分評價</a>
+                        <a href="/review?target=<%= encodeURIComponent(profile.name) %>" class="btn-accent-review">給予評分評價</a>
                     </div>
+                    <% } %>
                 </div>
 
                 <!-- 右側欄：詳細舞者資料與夥伴評價清單 -->

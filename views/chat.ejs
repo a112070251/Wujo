@@ -2,8 +2,8 @@
 <html lang="zh-Hant">
 <head>
     <%- include('section/head') %>
-    <title>對話中 - Wu Jo</title>
-    <!-- 🟢 引入 Socket.io 官方前端客戶端 Client 端 -->
+    <title>與 <%= chatTarget.name %> 對話中 - Wu Jo</title>
+    <!-- Socket.io 前端客戶端（由後端 socket.io 自動提供） -->
     <script src="/socket.io/socket.io.js"></script>
     <style>
         /* ==========================================
@@ -97,15 +97,32 @@
             justify-content: flex-end;
         }
 
-        .bubble {
+        .bubble-col {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
             max-width: 75%;
+        }
+
+        .sent .bubble-col {
+            align-items: flex-end;
+        }
+
+        .bubble {
             padding: 12px 18px;
             border-radius: 20px;
             font-size: 14px;
             line-height: 1.6;
             word-break: break-all;
+            white-space: pre-wrap;
             box-shadow: 0 2px 8px rgba(0,0,0,0.02);
             font-weight: 500;
+        }
+
+        .msg-time {
+            font-size: 11px;
+            color: #A0A0A0;
+            padding: 0 6px;
         }
 
         /* 他人泡泡：純白底細緻灰框 */
@@ -122,6 +139,31 @@
             color: #FFFFFF;
             border-top-right-radius: 4px;
             box-shadow: 0 4px 12px rgba(130, 58, 0, 0.15);
+        }
+
+        /* 還沒有任何訊息時的提示 */
+        .chat-empty {
+            text-align: center;
+            color: #999999;
+            font-size: 13px;
+            padding: 40px 0;
+        }
+
+        /* 傳送失敗等錯誤提示 */
+        .chat-error {
+            display: none;
+            position: fixed;
+            bottom: 128px;
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: 90%;
+            background-color: #FFEBEE;
+            border: 1px solid #FFCDD2;
+            color: #C62828;
+            font-size: 13px;
+            padding: 8px 16px;
+            border-radius: 12px;
+            z-index: 99;
         }
 
         /* 底部對話輸入欄外層 - 修正桌機版寬度爆炸問題 */
@@ -186,6 +228,12 @@
         .send-btn:active {
             transform: translateY(0);
         }
+
+        .send-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
     </style>
 </head>
 <body>
@@ -195,124 +243,157 @@
     <!-- 頂部對話目標固定欄 (桌機版自動置中收合至 650px) -->
     <div class="chat-header-bar">
         <a href="/messages" class="back-btn">← 返回</a>
-        
-        <a href="/profile/<%= chatTarget.name %>" style="display: flex; align-items: center; text-decoration: none; color: inherit;">
-            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= chatTarget.avatar %>" class="chat-target-avatar" alt="使用者頭像">
+
+        <a href="/profile/<%= encodeURIComponent(chatTarget.name) %>" style="display: flex; align-items: center; text-decoration: none; color: inherit;">
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= encodeURIComponent(chatTarget.avatar) %>" class="chat-target-avatar" alt="使用者頭像">
             <span class="chat-target-name"><%= chatTarget.name %></span>
         </a>
-        
-        <a href="/blacklist?target=<%= chatTarget.name %>" style="margin-left: auto; color: #B37A48; font-size: 13px; font-weight: 700; text-decoration: none;">檢舉</a>
+
+        <a href="/blacklist?target=<%= encodeURIComponent(chatTarget.name) %>" style="margin-left: auto; color: #B37A48; font-size: 13px; font-weight: 700; text-decoration: none;">檢舉</a>
     </div>
 
     <!-- 聊天主容器 -->
     <main class="chat-main-container" id="chatContainer">
-        
-        <!-- 歷史訊息串接與渲染 -->
-        <% if (locals.messages && messages.length > 0) { %>
+
+        <% if (messages.length > 0) { %>
             <% messages.forEach(function(msg) { %>
-                <div class="message-row <%= msg.senderId === user.id ? 'sent' : 'received' %>">
-                    <div class="bubble"><%= msg.text %></div>
+                <div class="message-row <%= msg.senderId === currentUserId ? 'sent' : 'received' %>">
+                    <div class="bubble-col">
+                        <div class="bubble"><%= msg.text %></div>
+                        <span class="msg-time"><%= msg.time %></span>
+                    </div>
                 </div>
             <% }); %>
         <% } else { %>
-            <!-- 預設隨機 Mock 資料（若無對話時之防禦呈現） -->
-            <div class="message-row received">
-                <div class="bubble">嗨！請問這週二晚上你有空一起在 Kinetics Studio 練舞嗎？</div>
-            </div>
-            <div class="message-row sent">
-                <div class="bubble">有空啊！我要練 Popping，你那天打算練什麼舞風？</div>
-            </div>
+            <div class="chat-empty" id="chatEmpty">還沒有任何訊息，跟 <%= chatTarget.name %> 打聲招呼吧！👋</div>
         <% } %>
 
     </main>
 
+    <div class="chat-error" id="chatError" role="alert"></div>
+
     <!-- 底部輸入區塊 (桌機版自動置中收合至 650px) -->
     <div class="chat-input-wrapper">
         <div class="chat-input-container">
-            <input type="text" id="msgInput" class="message-input" placeholder="輸入訊息..." autocomplete="off">
+            <input type="text" id="msgInput" class="message-input" placeholder="輸入訊息..." autocomplete="off" maxlength="<%= maxLength %>">
             <button id="sendBtn" class="send-btn">傳送</button>
         </div>
     </div>
 
     <!-- 前端即時 WebSocket 通信邏輯 -->
     <script>
-        // 1. 初始化 Socket 連線
+        // 使用者身分由伺服器依 session 判斷；這裡的 ID 只用來決定訊息顯示在左或右
+        const currentUserId = <%= currentUserId %>;
+        const targetUserId = <%= chatTarget.id %>;
+
         const socket = io();
 
-        // 2. 獲取 DOM 節點
         const chatContainer = document.getElementById('chatContainer');
         const msgInput = document.getElementById('msgInput');
         const sendBtn = document.getElementById('sendBtn');
+        const errorBox = document.getElementById('chatError');
+        let errorTimer = null;
 
-        // 獲取由 EJS 注入的動態參數
-        const currentUserId = "<%= user.id %>"; 
-        const targetUserId = "<%= chatTarget.id %>";
-        
-        // 算出唯一的聊天房間 ID 
-        const roomId = [currentUserId, targetUserId].sort().join('_');
-
-        // 3. 加入房間並自動滾動至底部
-        socket.emit('join_room', { roomId: roomId, userId: currentUserId });
-        scrollToBottom();
-
-        // 4. 發送訊息邏輯
-        function sendMessage() {
-            const text = msgInput.value.trim();
-            if (!text) return;
-
-            const messageData = {
-                roomId: roomId,
-                senderId: currentUserId,
-                receiverId: targetUserId,
-                text: text
-            };
-
-            // 透過 Socket 發送給後端
-            socket.emit('send_message', messageData);
-
-            // 當前畫面即時繪製發送泡泡
-            appendMessage(text, 'sent');
-            
-            msgInput.value = '';
-            scrollToBottom();
+        function showError(text) {
+            errorBox.textContent = text;
+            errorBox.style.display = 'block';
+            clearTimeout(errorTimer);
+            errorTimer = setTimeout(() => { errorBox.style.display = 'none'; }, 4000);
         }
 
-        // 5. 監聽新訊息接收事件
-        socket.on('receive_message', (data) => {
-            if (data.senderId !== currentUserId) {
-                appendMessage(data.text, 'received');
-                scrollToBottom();
-            }
-        });
-
-        // 輔助函式：動態新增訊息泡泡 (安全注入防範 XSS)
-        function appendMessage(text, type) {
-            const row = document.createElement('div');
-            row.classList.add('message-row', type);
-
-            const bubble = document.createElement('div');
-            bubble.classList.add('bubble');
-            bubble.textContent = text; 
-
-            row.appendChild(bubble);
-            chatContainer.appendChild(row);
-        }
-
-        // 輔助函式：自動滑動至聊天最底端
-        function scrollToBottom() {
+        function scrollToBottom(smooth) {
             window.scrollTo({
                 top: document.body.scrollHeight,
-                behavior: 'smooth'
+                behavior: smooth ? 'smooth' : 'auto'
             });
         }
 
-        // 6. 事件處理監聽
+        // 動態新增訊息泡泡（一律用 textContent，避免 XSS）
+        function appendMessage(msg, type) {
+            const empty = document.getElementById('chatEmpty');
+            if (empty) empty.remove();
+
+            const row = document.createElement('div');
+            row.className = 'message-row ' + type;
+
+            const col = document.createElement('div');
+            col.className = 'bubble-col';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.textContent = msg.text;
+
+            const time = document.createElement('span');
+            time.className = 'msg-time';
+            time.textContent = msg.time || '';
+
+            col.appendChild(bubble);
+            col.appendChild(time);
+            row.appendChild(col);
+            chatContainer.appendChild(row);
+        }
+
+        function sendMessage() {
+            const text = msgInput.value.trim();
+            if (!text) return;
+            if (!socket.connected) {
+                showError('尚未連線，請稍後再試或重新整理頁面');
+                return;
+            }
+
+            sendBtn.disabled = true;
+            // 5 秒內沒有收到伺服器回應就視為失敗，訊息保留在輸入框
+            socket.timeout(5000).emit('send_message', { to: targetUserId, text: text }, (err, res) => {
+                sendBtn.disabled = false;
+                if (err || !res) {
+                    showError('傳送逾時，請再試一次');
+                    return;
+                }
+                if (!res.ok) {
+                    showError(res.error || '傳送失敗');
+                    return;
+                }
+                appendMessage(res.message, 'sent');
+                msgInput.value = '';
+                msgInput.focus();
+                scrollToBottom(true);
+            });
+        }
+
+        // 對方傳來的新訊息：目前正在跟這個人聊天才顯示，並標記已讀
+        socket.on('receive_message', (msg) => {
+            if (msg.senderId !== targetUserId) return;
+            appendMessage(msg, 'received');
+            scrollToBottom(true);
+            socket.emit('mark_read', { from: targetUserId });
+        });
+
+        // 同一帳號在其他分頁傳出的訊息，也同步顯示在這裡
+        socket.on('message_sent', (msg) => {
+            if (msg.receiverId !== targetUserId) return;
+            appendMessage(msg, 'sent');
+            scrollToBottom(true);
+        });
+
+        socket.on('connect_error', (err) => {
+            if (err && err.message === 'banned') {
+                showError('您的帳號已被停權，無法傳送訊息');
+            } else {
+                showError('連線失敗，請重新整理頁面或重新登入');
+            }
+        });
+
         sendBtn.addEventListener('click', sendMessage);
         msgInput.addEventListener('keydown', (e) => {
+            // 中文輸入法按 Enter 是「選字確認」，不能當成送出
+            if (e.isComposing || e.keyCode === 229) return;
             if (e.key === 'Enter') {
+                e.preventDefault();
                 sendMessage();
             }
         });
+
+        scrollToBottom(false);
     </script>
 </body>
 </html>
