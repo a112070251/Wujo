@@ -479,6 +479,29 @@
                                 💾 儲存並更新我的攝影檔案
                             </button>
                         </form>
+
+                        <% if (photographer.active) { %>
+                            <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid #F0F0F0;">
+                                <p style="font-size: 13px; font-weight: 900; color: #222; margin-bottom: 10px;">🎞️ 作品集（<%= portfolio.length %> / <%= maxPortfolio %>）</p>
+
+                                <% portfolio.forEach(function(item) { %>
+                                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-bottom: 1px solid #F5F5F5;">
+                                        <a href="<%= item.url %>" target="_blank" rel="noopener noreferrer nofollow" style="font-size: 13px; color: #823A00; font-weight: 700; text-decoration: none; word-break: break-all;"><%= item.title %></a>
+                                        <form action="/portfolio/<%= item.id %>/delete" method="POST" onsubmit="return confirm('確定要刪除這個作品連結嗎？');">
+                                            <button type="submit" style="border: 1px solid #FFCDD2; background: #fff; color: #C62828; border-radius: 8px; padding: 3px 10px; font-size: 11px; font-weight: 700; cursor: pointer;">刪除</button>
+                                        </form>
+                                    </div>
+                                <% }); %>
+
+                                <% if (portfolio.length < maxPortfolio) { %>
+                                    <form action="/portfolio/add" method="POST" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+                                        <input type="text" name="title" maxlength="<%= maxPortfolioTitle %>" placeholder="作品名稱（例：HipHop 舞台直拍）" class="photo-input-field" required>
+                                        <input type="url" name="url" maxlength="300" placeholder="作品連結（YouTube、Instagram、雲端相簿…）" class="photo-input-field" required>
+                                        <button type="submit" class="btn-update-photo">＋ 新增作品連結</button>
+                                    </form>
+                                <% } %>
+                            </div>
+                        <% } %>
                     </div>
 
                 </div> <!-- 右側欄結束 -->

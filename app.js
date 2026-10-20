@@ -78,6 +78,23 @@ const PHOTO_LOCATIONS = ['台北', '新北', '桃園', '台中', '台南', '高�
 const MIN_PHOTO_PRICE = 100;
 const MAX_PHOTO_PRICE = 100000;
 const MAX_PHOTO_BIO = 200;
+const MAX_PORTFOLIO_ITEMS = 6;
+const MAX_PORTFOLIO_TITLE = 40;
+const MAX_PORTFOLIO_URL = 300;
+
+// 只接受 http(s) 連結（擋掉 javascript: 之類），回傳整理過的網址或 null
+function cleanPortfolioUrl(input) {
+    const raw = String(input || '').trim();
+    if (raw.length === 0 || raw.length > MAX_PORTFOLIO_URL) return null;
+    try {
+        const u = new URL(raw);
+        if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+        if (u.username || u.password) return null;
+        return u.href;
+    } catch (e) {
+        return null;
+    }
+}
 
 // --- 貼文與訊息的共用設定 ---
 const POST_TAGS = ['找比賽', '練基礎', '拍片', 'K-Pop', 'HipHop', '街舞', 'Breaking', 'Popping'];
@@ -327,7 +344,9 @@ app.get('/me', (req, res) => {
         bio: pg ? pg.bio : ''
     };
 
-    res.render('me', { user: req.session.user, bookings, notice, photographer, photoStyles: PHOTO_STYLES, photoLocations: PHOTO_LOCATIONS, maxPhotoBio: MAX_PHOTO_BIO });
+    const portfolio = Number.isInteger(req.session.user.id) ? store.listPortfolio(req.session.user.id) : [];
+
+    res.render('me', { user: req.session.user, bookings, notice, photographer, portfolio, maxPortfolio: MAX_PORTFOLIO_ITEMS, maxPortfolioTitle: MAX_PORTFOLIO_TITLE, photoStyles: PHOTO_STYLES, photoLocations: PHOTO_LOCATIONS, maxPhotoBio: MAX_PHOTO_BIO });
 });
 
 app.post('/update-photographer', (req, res) => {
@@ -577,6 +596,12 @@ const BOOKING_MESSAGES = {
     notfound: { type: 'error', text: '找不到這筆預約。' },
     pg_saved: { type: 'success', text: '攝影師檔案已更新。' },
     pg_closed: { type: 'success', text: '已暫停接案，你不會出現在攝影師列表。' },
+    pf_added: { type: 'success', text: '作品連結已新增。' },
+    pf_removed: { type: 'success', text: '作品連結已刪除。' },
+    pf_invalid: { type: 'error', text: `請填寫作品名稱（最多 ${MAX_PORTFOLIO_TITLE} 字）和有效的 http(s) 連結。` },
+    pf_limit: { type: 'error', text: `作品集最多 ${MAX_PORTFOLIO_ITEMS} 筆，請先刪除舊的。` },
+    pf_dup: { type: 'error', text: '這個連結已經在你的作品集裡了。' },
+    pf_needpg: { type: 'error', text: '請先開啟攝影師身份，才能管理作品集。' },
     pg_invalid: { type: 'error', text: `請填寫 ${MIN_PHOTO_PRICE} 到 ${MAX_PHOTO_PRICE} 的時薪，並選擇風格與地區（簡介最多 ${MAX_PHOTO_BIO} 字）。` }
 };
 
@@ -688,6 +713,39 @@ app.get('/profile/:username', (req, res) => {
     });
 });
 
+app.post('/portfolio/add', (req, res) => {
+    const me = req.session.user;
+    if (!me) return res.redirect('/login');
+
+    const pg = store.getPhotographerByUserId(me.id);
+    if (!pg || pg.active !== 1) return res.redirect('/me?msg=pf_needpg');
+
+    const title = String(req.body.title || '').trim();
+    const url = cleanPortfolioUrl(req.body.url);
+    if (!title || title.length > MAX_PORTFOLIO_TITLE || !url) return res.redirect('/me?msg=pf_invalid');
+    if (store.countPortfolio(me.id) >= MAX_PORTFOLIO_ITEMS) return res.redirect('/me?msg=pf_limit');
+
+    try {
+        store.addPortfolioItem(me.id, title, url);
+    } catch (err) {
+        if (err && (String(err.code).startsWith('SQLITE_CONSTRAINT') || /constraint failed/i.test(String(err.message)))) {
+            return res.redirect('/me?msg=pf_dup');
+        }
+        throw err;
+    }
+    res.redirect('/me?msg=pf_added');
+});
+
+app.post('/portfolio/:id/delete', (req, res) => {
+    const me = req.session.user;
+    if (!me) return res.redirect('/login');
+
+    const id = /^\d+$/.test(req.params.id) ? Number(req.params.id) : NaN;
+    // 只能刪除自己的作品
+    if (Number.isInteger(id)) store.removePortfolioItem(id, me.id);
+    res.redirect('/me?msg=pf_removed');
+});
+
 app.get('/photographers', (req, res) => {
     const currentStyle = PHOTO_STYLES.includes(req.query.style) ? req.query.style : '全部風格';
 
@@ -747,6 +805,7 @@ app.get('/review/photographer', (req, res) => {
     res.render('review_photographer', {
         targetPhotographer,
         photoReviews,
+        portfolio: store.listPortfolio(pg.id),
         canReview: !!me && me.id !== pg.id,
         notice: req.query.msg === 'saved' ? { type: 'success', text: '評價已送出，謝謝你的回饋！' } : null
     });
