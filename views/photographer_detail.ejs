@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <%- include('section/head') %>
+    <title><%= targetPhotographer.name %> - 攝影師 - Wu Jo</title>
+    <style>
+        /* 讓隱藏的 checkbox 在被選取時，對應的標籤外觀產生高亮變化 */
+        .tag-checkbox {
+            display: none;
+        }
+        .tag-label {
+            display: inline-block;
+            font-size: 12px;
+            background: #F0F0F0;
+            padding: 6px 12px;
+            border-radius: 20px;
+            color: #555;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        .tag-checkbox:checked + .tag-label {
+            background: #FFF3E0;
+            color: #E65100;
+            border-color: #E65100;
+            font-weight: bold;
+        }
+
+        .pg-card { background: white; border-radius: 20px; padding: 20px; border: 1px solid #EFEFEF; box-shadow: 0 4px 12px rgba(0,0,0,0.04); margin-bottom: 20px; }
+        .pg-section-title { font-size: 16px; font-weight: 900; color: #222; margin: 0 0 4px 0; }
+        .pg-hint { font-size: 12px; color: #888; margin: 0 0 12px 0; line-height: 1.5; }
+        .pg-input { padding: 10px; border-radius: 10px; border: 1px solid #DDD; font-size: 13px; background: white; box-sizing: border-box; width: 100%; }
+        .pg-btn-primary { background: #823A00; color: white; border: none; padding: 13px; border-radius: 12px; font-weight: bold; font-size: 14px; cursor: pointer; text-decoration: none; text-align: center; display: block; }
+        .pg-btn-ghost { background: white; color: #823A00; border: 1px solid #823A00; padding: 12px; border-radius: 12px; font-weight: bold; font-size: 14px; text-decoration: none; text-align: center; display: block; }
+        .pg-nav { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; }
+        .pg-nav a { flex: none; text-decoration: none; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: bold; background: #F0F0F0; color: #555; }
+        section[id] { scroll-margin-top: 70px; }
+    </style>
+</head>
+<body>
+
+    <%- include('section/nav') %>
+
+    <main class="main-content" style="padding-bottom: 90px; padding-top: 20px;">
+        <div class="container">
+
+            <div style="margin-bottom: 16px;">
+                <a href="/photographers" style="color: #823A00; text-decoration: none; font-size: 14px; font-weight: bold;">⬅️ 返回攝影師列表</a>
+            </div>
+
+            <!-- 攝影師檔案 -->
+            <div class="pg-card">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <img src="https://api.dicebear.com/7.x/bottts/svg?seed=<%= encodeURIComponent(targetPhotographer.avatar) %>"
+                         alt="<%= targetPhotographer.name %>"
+                         style="width: 64px; height: 64px; border-radius: 50%; background: #F5F5F5; border: 2px solid #823A00; flex-shrink: 0;">
+                    <div>
+                        <h1 style="font-size: 20px; font-weight: 900; color: #222; margin: 0 0 4px 0;"><%= targetPhotographer.name %></h1>
+                        <p style="font-size: 13px; color: #666; margin: 0;">🎥 <%= targetPhotographer.style %> · 📍 <%= targetPhotographer.location %></p>
+                        <p style="font-size: 12px; color: #888; margin: 2px 0 0 0;"><%= targetPhotographer.reviewCount > 0 ? '★ ' + targetPhotographer.rating + '（' + targetPhotographer.reviewCount + ' 則評價）' : '尚無評價' %></p>
+                    </div>
+                </div>
+                <% if (targetPhotographer.bio) { %>
+                    <p style="font-size: 13px; color: #555; line-height: 1.6; margin: 14px 0 0 0;"><%= targetPhotographer.bio %></p>
+                <% } %>
+                <p style="font-size: 16px; color: #D32F2F; font-weight: 900; margin: 14px 0 0 0;">💰 $<%= targetPhotographer.price %> / 小時</p>
+
+                <div style="display: flex; gap: 10px; margin-top: 16px;">
+                    <% if (locals.isSelf) { %>
+                        <a href="/me" class="pg-btn-ghost" style="flex: 1;">在「我的」管理檔案與邀請</a>
+                    <% } else { %>
+                        <a href="#book" class="pg-btn-primary" style="flex: 2;">📅 預約拍攝</a>
+                        <a href="/chat/<%= targetPhotographer.id %>" class="pg-btn-ghost" style="flex: 1;">💬 私訊</a>
+                    <% } %>
+                </div>
+            </div>
+
+            <% if (locals.notice) { %>
+                <div style="font-size: 13px; padding: 12px 16px; border-radius: 12px; margin-bottom: 16px; background: <%= notice.type === 'success' ? '#E8F5E9' : '#FFEBEE' %>; color: <%= notice.type === 'success' ? '#2E7D32' : '#C62828' %>;" role="status"><%= notice.text %></div>
+            <% } %>
+
+            <div class="pg-nav">
+                <a href="#book">預約拍攝</a>
+                <a href="#portfolio">作品集（<%= portfolio.length %>）</a>
+                <a href="#reviews">評價（<%= photoReviews.length %>）</a>
+            </div>
+
+            <!-- 預約拍攝 -->
+            <section id="book" class="pg-card">
+                <h2 class="pg-section-title">📅 預約拍攝</h2>
+                <% if (locals.isSelf) { %>
+                    <p class="pg-hint">這是你自己的攝影師頁面。別人送來的邀請會顯示在「我的」頁面的「拍攝預約」。</p>
+                <% } else if (!locals.user) { %>
+                    <p class="pg-hint">請先登入才能預約。</p>
+                    <a href="/login" class="pg-btn-primary">登入後預約</a>
+                <% } else { %>
+                    <p class="pg-hint">選擇你想拍攝的時段，送出後等攝影師確認。確認前不會收費（本站不處理付款）。</p>
+                    <form action="/photographers/<%= targetPhotographer.id %>/request" method="POST" style="display: flex; flex-direction: column; gap: 10px;">
+                        <label style="font-size: 12px; font-weight: 700; color: #555;">日期
+                            <input type="date" name="date" class="pg-input" min="<%= minDate %>" max="<%= maxDate %>" value="<%= minDate %>" required>
+                        </label>
+                        <div style="display: flex; gap: 10px;">
+                            <label style="flex: 1; font-size: 12px; font-weight: 700; color: #555;">開始時間
+                                <select name="startHour" class="pg-input">
+                                    <% for (let h = openHour; h < closeHour; h++) { %>
+                                        <option value="<%= h %>"><%= String(h).padStart(2, '0') %>:00</option>
+                                    <% } %>
+                                </select>
+                            </label>
+                            <label style="flex: 1; font-size: 12px; font-weight: 700; color: #555;">時數
+                                <select name="duration" class="pg-input">
+                                    <% for (let d = 1; d <= maxDuration; d++) { %>
+                                        <option value="<%= d %>"><%= d %> 小時（$<%= targetPhotographer.price * d %>）</option>
+                                    <% } %>
+                                </select>
+                            </label>
+                        </div>
+                        <label style="font-size: 12px; font-weight: 700; color: #555;">備註（選填）
+                            <textarea name="note" rows="2" maxlength="<%= maxNote %>" placeholder="想拍什麼、地點等，最多 <%= maxNote %> 字" class="pg-input" style="resize: none;"></textarea>
+                        </label>
+                        <button type="submit" class="pg-btn-primary">送出拍攝邀請</button>
+                    </form>
+                <% } %>
+            </section>
+
+            <!-- 作品集 -->
+            <section id="portfolio" class="pg-card">
+                <h2 class="pg-section-title">🎞️ 作品集</h2>
+                <% if (portfolio.length > 0) { %>
+                    <% portfolio.forEach(function(item) { %>
+                        <a href="<%= item.url %>" target="_blank" rel="noopener noreferrer nofollow" style="display: block; padding: 8px 0; font-size: 13px; color: #823A00; font-weight: 700; text-decoration: none; word-break: break-all;">▶ <%= item.title %></a>
+                    <% }); %>
+                <% } else { %>
+                    <p class="pg-hint" style="margin: 0;">攝影師還沒有放上作品連結。</p>
+                <% } %>
+            </section>
+
+            <!-- 評價 -->
+            <section id="reviews">
+                <h2 class="pg-section-title" style="margin-bottom: 12px;">⭐ 評價（<%= photoReviews.length %>）</h2>
+
+                <% if (locals.canReview) { %>
+                <div class="pg-card">
+                    <h3 style="font-size: 14px; font-weight: 900; color: #222; margin: 0 0 12px 0;">✍️ 合作過了嗎？留下你的評價（再次送出會更新你先前的評價）</h3>
+                    <form action="/submit-photo-review" method="POST" style="display: flex; flex-direction: column; gap: 12px;">
+                        <input type="hidden" name="targetName" value="<%= targetPhotographer.name %>">
+
+                        <div>
+                            <label style="font-size: 13px; font-weight: bold; color: #555; display: block; margin-bottom: 6px;">星等評分：</label>
+                            <select name="rating" class="pg-input">
+                                <option value="5">⭐⭐⭐⭐⭐ 5.0 - 完美！運鏡與卡點極度舒適</option>
+                                <option value="4">⭐⭐⭐⭐ 4.0 - 優良！出片快速且認真指導</option>
+                                <option value="3">⭐⭐⭐ 3.0 - 普通！成品符合預期</option>
+                                <option value="2">⭐⭐ 2.0 - 待改善！交付時間有些延遲</option>
+                                <option value="1">⭐ 1.0 - 糟糕！溝通態度不佳</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label style="font-size: 13px; font-weight: bold; color: #555; display: block; margin-bottom: 6px;">攝影優點印象（可複選）：</label>
+                            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                <input type="checkbox" name="tags" value="出片極快" id="tag1" class="tag-checkbox">
+                                <label for="tag1" class="tag-label">⚡ 出片極快</label>
+
+                                <input type="checkbox" name="tags" value="運鏡很穩" id="tag2" class="tag-checkbox">
+                                <label for="tag2" class="tag-label">🎬 運鏡很穩</label>
+
+                                <input type="checkbox" name="tags" value="很會引導動作" id="tag3" class="tag-checkbox">
+                                <label for="tag3" class="tag-label">💡 很會引導動作</label>
+
+                                <input type="checkbox" name="tags" value="配樂切點精準" id="tag4" class="tag-checkbox">
+                                <label for="tag4" class="tag-label">🎸 配樂切點精準</label>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label style="font-size: 13px; font-weight: bold; color: #555; display: block; margin-bottom: 6px;">詳細評語：</label>
+                            <textarea name="comment" rows="3" placeholder="請分享這次與攝影師合作的體驗..." class="pg-input" style="resize: none;" required></textarea>
+                        </div>
+
+                        <button type="submit" class="pg-btn-primary" style="font-size: 13px;">🚀 提交評價</button>
+                    </form>
+                </div>
+                <% } %>
+
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <% if (photoReviews.length === 0) { %>
+                        <p class="pg-hint">還沒有評價。</p>
+                    <% } %>
+                    <% photoReviews.forEach(function(review) { %>
+                        <div style="background: white; border-radius: 16px; padding: 14px; border: 1px solid #EFEFEF;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <span style="font-size: 13px; font-weight: bold; color: #333;"><%= review.name %></span>
+                                <span style="color: #F1C40F; font-size: 12px;">
+                                    <% for (let i = 0; i < 5; i++) { %><%= i < parseInt(review.rating) ? '★' : '☆' %><% } %>
+                                    <%= parseFloat(review.rating).toFixed(1) %>
+                                </span>
+                            </div>
+
+                            <% if (review.tags && review.tags.length > 0) { %>
+                                <div style="display: flex; gap: 4px; margin-bottom: 8px; flex-wrap: wrap;">
+                                    <% review.tags.forEach(function(tag) { %>
+                                        <span style="font-size: 11px; background: #F5F5F5; color: #666; padding: 2px 8px; border-radius: 4px; border: 1px solid #E0E0E0;"><%= tag %></span>
+                                    <% }); %>
+                                </div>
+                            <% } %>
+
+                            <p style="font-size: 13px; color: #555; margin: 0; line-height: 1.4;"><%= review.comment %></p>
+                            <span style="font-size: 11px; color: #999; display: block; margin-top: 6px;">📅 <%= review.date %></span>
+                        </div>
+                    <% }); %>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+</body>
+</html>
