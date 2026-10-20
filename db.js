@@ -139,6 +139,29 @@ db.exec(`
 
     CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read_at, id);
 
+    -- 拍攝邀請：客戶向攝影師提出時段，攝影師確認或婉拒；已確認的拍攝在同一時段不能重疊
+    CREATE TABLE IF NOT EXISTS shoot_requests (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        client_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        photographer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        date            TEXT NOT NULL,
+        start_hour      INTEGER NOT NULL,
+        duration        INTEGER NOT NULL,
+        price           INTEGER NOT NULL,
+        note            TEXT NOT NULL DEFAULT '',
+        status          TEXT NOT NULL DEFAULT 'pending'
+                        CHECK (status IN ('pending', 'accepted', 'declined', 'cancelled')),
+        created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+        responded_at    TEXT,
+        CHECK (client_id <> photographer_id)
+    );
+
+    -- 同一客戶對同一攝影師、同一開始時間，進行中的邀請只能有一筆
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_shoot_dup
+        ON shoot_requests(client_id, photographer_id, date, start_hour) WHERE status IN ('pending', 'accepted');
+    CREATE INDEX IF NOT EXISTS idx_shoot_photographer ON shoot_requests(photographer_id, status, date);
+    CREATE INDEX IF NOT EXISTS idx_shoot_client ON shoot_requests(client_id, status, date);
+
     -- 攝影師作品集：只存外部連結（YouTube、Instagram、雲端相簿等）
     CREATE TABLE IF NOT EXISTS portfolio_items (
         id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -331,6 +354,37 @@ const notifStmts = {
     markRead: db.prepare("UPDATE notifications SET read_at = datetime('now') WHERE user_id = ? AND read_at IS NULL")
 };
 
+const SHOOT_SELECT = `SELECT s.*, c.name AS client_name, p.name AS photographer_name
+    FROM shoot_requests s JOIN users c ON c.id = s.client_id JOIN users p ON p.id = s.photographer_id`;
+
+const shootStmts = {
+    insert: db.prepare('INSERT INTO shoot_requests (client_id, photographer_id, date, start_hour, duration, price, note) VALUES (?, ?, ?, ?, ?, ?, ?)'),
+    byId: db.prepare(SHOOT_SELECT + ' WHERE s.id = ?'),
+    forClient: db.prepare(SHOOT_SELECT + " WHERE s.client_id = ? AND s.status IN ('pending', 'accepted') AND s.date >= ? ORDER BY s.date, s.start_hour LIMIT 50"),
+    forPhotographer: db.prepare(SHOOT_SELECT + " WHERE s.photographer_id = ? AND s.status IN ('pending', 'accepted') AND s.date >= ? ORDER BY s.date, s.start_hour LIMIT 50"),
+    activeCount: db.prepare(`SELECT COUNT(*) AS n FROM shoot_requests
+        WHERE client_id = ? AND status IN ('pending', 'accepted')
+          AND (date > ? OR (date = ? AND start_hour + duration > ?))`),
+    conflict: db.prepare(`SELECT 1 FROM shoot_requests WHERE photographer_id = ? AND date = ? AND status = 'accepted'
+        AND id <> ? AND start_hour < ? AND ? < start_hour + duration`),
+    setStatus: db.prepare("UPDATE shoot_requests SET status = ?, responded_at = datetime('now') WHERE id = ?"),
+    cancel: db.prepare(`UPDATE shoot_requests SET status = 'cancelled', responded_at = datetime('now')
+        WHERE id = ? AND status IN ('pending', 'accepted') AND (client_id = ? OR photographer_id = ?)`)
+};
+
+// 回覆邀請：只有被邀請的攝影師、且狀態是 pending 才能回覆；確認時檢查時段是否和已確認的拍攝重疊
+const respondShootTx = db.transaction((id, photographerId, action) => {
+    const s = shootStmts.byId.get(id);
+    if (!s || s.photographer_id !== photographerId || s.status !== 'pending') return 'notpending';
+    if (action === 'accept') {
+        if (shootStmts.conflict.get(photographerId, s.date, id, s.start_hour + s.duration, s.start_hour)) return 'conflict';
+        shootStmts.setStatus.run('accepted', id);
+    } else {
+        shootStmts.setStatus.run('declined', id);
+    }
+    return 'ok';
+});
+
 const bookingStmts = {
     insert: db.prepare('INSERT INTO bookings (user_id, room_id, date, start_hour, duration, price) VALUES (?, ?, ?, ?, ?, ?)'),
     insertSlot: db.prepare('INSERT INTO booking_slots (booking_id, room_id, date, hour) VALUES (?, ?, ?, ?)'),
@@ -432,6 +486,19 @@ module.exports = {
     listNotifications: (userId) => notifStmts.list.all(userId),
     countUnreadNotifications: (userId) => notifStmts.unread.get(userId).n,
     markNotificationsRead: (userId) => notifStmts.markRead.run(userId).changes,
+
+    // --- shoot requests ---
+    createShootRequest: (clientId, photographerId, date, startHour, duration, price, note) =>
+        shootStmts.insert.run(clientId, photographerId, date, startHour, duration, price, note).lastInsertRowid,
+    getShoot: (id) => shootStmts.byId.get(id),
+    listShootsForClient: (userId, today) => shootStmts.forClient.all(userId, today),
+    listShootsForPhotographer: (userId, today) => shootStmts.forPhotographer.all(userId, today),
+    countActiveShoots: (clientId, today, hour) => shootStmts.activeCount.get(clientId, today, today, hour).n,
+    respondShoot: (id, photographerId, action) => {
+        if (action !== 'accept' && action !== 'decline') return 'notpending';
+        return respondShootTx(id, photographerId, action);
+    },
+    cancelShoot: (id, userId) => shootStmts.cancel.run(id, userId, userId).changes,
 
     // --- bookings ---
     createBooking: (userId, roomId, date, startHour, duration, price) =>
