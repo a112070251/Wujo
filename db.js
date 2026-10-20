@@ -85,6 +85,20 @@ db.exec(`
     );
 
     CREATE INDEX IF NOT EXISTS idx_bookings_user ON bookings(user_id, status, date);
+
+    -- 夥伴評價：每人對同一位使用者只有一則（再送出會更新），不能評價自己
+    CREATE TABLE IF NOT EXISTS partner_reviews (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        reviewer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        target_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        rating      INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+        comment     TEXT NOT NULL DEFAULT '',
+        created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+        UNIQUE (reviewer_id, target_id),
+        CHECK (reviewer_id <> target_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_partner_reviews_target ON partner_reviews(target_id, id);
 `);
 
 const stmts = {
@@ -217,6 +231,14 @@ const createPostTx = db.transaction((authorId, content, tags) => {
     return postId;
 });
 
+const reviewStmts = {
+    upsert: db.prepare(`INSERT INTO partner_reviews (reviewer_id, target_id, rating, comment) VALUES (?, ?, ?, ?)
+        ON CONFLICT(reviewer_id, target_id) DO UPDATE SET rating = excluded.rating, comment = excluded.comment, created_at = datetime('now')`),
+    list: db.prepare(`SELECT r.id, r.rating, r.comment, r.created_at, u.name AS reviewer_name
+        FROM partner_reviews r JOIN users u ON u.id = r.reviewer_id
+        WHERE r.target_id = ? ORDER BY r.id DESC LIMIT 50`)
+};
+
 const bookingStmts = {
     insert: db.prepare('INSERT INTO bookings (user_id, room_id, date, start_hour, duration, price) VALUES (?, ?, ?, ?, ?, ?)'),
     insertSlot: db.prepare('INSERT INTO booking_slots (booking_id, room_id, date, hour) VALUES (?, ?, ?, ?)'),
@@ -279,6 +301,10 @@ module.exports = {
     markConversationRead: (receiverId, senderId) => stmts.markRead.run(receiverId, senderId).changes,
     countUnread: (userId) => stmts.countUnread.get(userId).n,
     listConversations: (userId) => stmts.conversations.all({ me: userId }),
+
+    // --- partner reviews ---
+    saveReview: (reviewerId, targetId, rating, comment) => reviewStmts.upsert.run(reviewerId, targetId, rating, comment).changes,
+    listReviews: (targetId) => reviewStmts.list.all(targetId),
 
     // --- bookings ---
     createBooking: (userId, roomId, date, startHour, duration, price) =>
