@@ -65,16 +65,6 @@ const rooms = [
     { id: 2, name: "信義 101 館", dist: "信義區", price: 600, lat: 25.0336, lng: 121.5646, image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=500&auto=format&fit=crop" }
 ];
 
-const dynamicPhotographers = [
-    { name: "小明", avatar: "XiaoMing", style: "街舞動態攝影", price: "1500", location: "台北" },
-    { name: "阿華", avatar: "AhHua", style: "舞台劇照", price: "2000", location: "台中" }
-];
-
-const photoReviews = [
-    { name: "舞者 小雅", rating: "5", tags: ["出片極快", "運鏡很穩"], comment: "分鏡切得超級棒！跳 K-Pop 副歌時的推進鏡頭很有震撼力，而且拍攝完隔天就拿到初剪檔案了，效率高到嚇人，大推！", date: "2026-06-15" },
-    { name: "舞者 阿強", rating: "4", tags: ["很會引導動作"], comment: "很會引導不習慣面對鏡頭的舞者，燈光打得非常好看。美中不足是當天教室冷氣有點弱，但攝影師專業度沒話說！", date: "2026-05-29" }
-];
-
 // --- 防暴力破解與濫用 ---
 const loginLimiter = new Limiter(10, 15 * 60 * 1000);    // 同一 IP + 帳號 15 分鐘最多 10 次
 const registerLimiter = new Limiter(10, 60 * 60 * 1000); // 同一 IP 每小時最多註冊 10 次
@@ -83,7 +73,11 @@ const reviewLimiter = new Limiter(20, 60 * 60 * 1000);   // 同一使用者每�
 // --- 評價設定 ---
 const MAX_REVIEW_COMMENT = 300;
 const PHOTO_REVIEW_TAGS = ['出片極快', '運鏡很穩', '很會引導動作', '配樂切點精準'];
-const MAX_PHOTO_REVIEWS = 200;
+const PHOTO_STYLES = ['街舞動態', 'K-Pop直拍', '活動劇照'];
+const PHOTO_LOCATIONS = ['台北', '新北', '桃園', '台中', '台南', '高雄', '其他'];
+const MIN_PHOTO_PRICE = 100;
+const MAX_PHOTO_PRICE = 100000;
+const MAX_PHOTO_BIO = 200;
 
 // --- 貼文與訊息的共用設定 ---
 const POST_TAGS = ['找比賽', '練基礎', '拍片', 'K-Pop', 'HipHop', '街舞', 'Breaking', 'Popping'];
@@ -307,12 +301,6 @@ app.get('/me', (req, res) => {
         req.session.user.isWarning = approved === store.REPORT_BAN_THRESHOLD - 1;
     }
 
-    if (typeof req.session.user.isPhotographer === 'undefined') {
-        req.session.user.isPhotographer = false;
-        req.session.user.photoPrice = "0";
-        req.session.user.photoStyle = "";
-    }
-    
     const today = bookingRules.taipeiNow().date;
     const bookings = Number.isInteger(req.session.user.id)
         ? store.listUpcomingBookings(req.session.user.id, today)
@@ -330,19 +318,42 @@ app.get('/me', (req, res) => {
         : [];
     const notice = Object.hasOwn(BOOKING_MESSAGES, req.query.msg) ? BOOKING_MESSAGES[req.query.msg] : null;
 
-    res.render('me', { user: req.session.user, bookings, notice });
+    const pg = Number.isInteger(req.session.user.id) ? store.getPhotographerByUserId(req.session.user.id) : null;
+    const photographer = {
+        active: !!pg && pg.active === 1,
+        price: pg ? pg.price : '',
+        style: pg ? pg.style : PHOTO_STYLES[0],
+        location: pg ? pg.location : PHOTO_LOCATIONS[0],
+        bio: pg ? pg.bio : ''
+    };
+
+    res.render('me', { user: req.session.user, bookings, notice, photographer, photoStyles: PHOTO_STYLES, photoLocations: PHOTO_LOCATIONS, maxPhotoBio: MAX_PHOTO_BIO });
 });
 
 app.post('/update-photographer', (req, res) => {
-    if (!req.session.user) return res.redirect('/login');
+    const me = req.session.user;
+    if (!me) return res.redirect('/login');
 
-    const { isPhotographer, photoPrice, photoStyle } = req.body;
+    if (req.body.isPhotographer !== 'true') {
+        store.deactivatePhotographer(me.id);
+        return res.redirect('/me?msg=pg_closed');
+    }
 
-    req.session.user.isPhotographer = (isPhotographer === 'true');
-    req.session.user.photoPrice = photoPrice || "0";
-    req.session.user.photoStyle = photoStyle || "";
+    const priceText = String(req.body.photoPrice || '').trim();
+    const price = /^\d{1,6}$/.test(priceText) ? Number(priceText) : NaN;
+    const style = String(req.body.photoStyle || '');
+    const location = String(req.body.photoLocation || '');
+    const bio = String(req.body.photoBio || '').trim();
 
-    res.redirect('/me');
+    if (!(price >= MIN_PHOTO_PRICE && price <= MAX_PHOTO_PRICE)
+        || !PHOTO_STYLES.includes(style)
+        || !PHOTO_LOCATIONS.includes(location)
+        || bio.length > MAX_PHOTO_BIO) {
+        return res.redirect('/me?msg=pg_invalid');
+    }
+
+    store.savePhotographer(me.id, { price, style, location, bio });
+    res.redirect('/me?msg=pg_saved');
 });
 
 app.get('/blacklist', (req, res) => {
@@ -563,7 +574,10 @@ const BOOKING_MESSAGES = {
     booked: { type: 'success', text: '預約成功！' },
     cancelled: { type: 'success', text: '預約已取消。' },
     cancel_late: { type: 'error', text: `開始前 ${bookingRules.MIN_CANCEL_HOURS} 小時內無法取消，請直接聯絡教室。` },
-    notfound: { type: 'error', text: '找不到這筆預約。' }
+    notfound: { type: 'error', text: '找不到這筆預約。' },
+    pg_saved: { type: 'success', text: '攝影師檔案已更新。' },
+    pg_closed: { type: 'success', text: '已暫停接案，你不會出現在攝影師列表。' },
+    pg_invalid: { type: 'error', text: `請填寫 ${MIN_PHOTO_PRICE} 到 ${MAX_PHOTO_PRICE} 的時薪，並選擇風格與地區（簡介最多 ${MAX_PHOTO_BIO} 字）。` }
 };
 
 function findRoom(idParam) {
@@ -675,35 +689,21 @@ app.get('/profile/:username', (req, res) => {
 });
 
 app.get('/photographers', (req, res) => {
-    const currentStyle = req.query.style || '全部風格';
-    
-    let currentList = [
-        { name: "小明", avatar: "XiaoMing", style: "街舞動態", price: "1500", location: "台北" },
-        { name: "阿華", avatar: "AhHua", style: "活動劇照", price: "2000", location: "台中" }
-    ];
+    const currentStyle = PHOTO_STYLES.includes(req.query.style) ? req.query.style : '全部風格';
 
-    if (req.session.user && req.session.user.isPhotographer) {
-        const alreadyExists = currentList.some(p => p.name === req.session.user.name);
-        if (!alreadyExists) {
-            currentList.push({
-                name: req.session.user.name,
-                avatar: req.session.user.name,
-                style: req.session.user.photoStyle || "未填寫風格",
-                price: req.session.user.photoPrice || "0",
-                location: "台北"
-            });
-        }
-    }
+    const photographers = store.listPhotographers(currentStyle === '全部風格' ? null : currentStyle).map(p => ({
+        id: p.id,
+        name: p.name,
+        avatar: p.name,
+        style: p.style,
+        price: p.price,
+        location: p.location,
+        bio: p.bio,
+        rating: p.avg_rating,
+        reviewCount: p.review_count
+    }));
 
-    let filteredPhotographers = currentList;
-    if (currentStyle !== '全部風格') {
-        filteredPhotographers = currentList.filter(p => p.style.includes(currentStyle));
-    }
-
-    res.render('photographers', { 
-        photographers: filteredPhotographers, 
-        currentStyle: currentStyle 
-    });
+    res.render('photographers', { photographers, currentStyle, photoStyles: PHOTO_STYLES });
 });
 
 app.get('/review', (req, res) => {
@@ -724,41 +724,53 @@ app.get('/review', (req, res) => {
 });
 
 app.get('/review/photographer', (req, res) => {
-    const targetName = req.query.target;
+    const pg = store.getActivePhotographerByName(String(req.query.target || '').trim());
+    if (!pg) return res.redirect('/photographers');
+
+    const me = req.session.user;
     const targetPhotographer = {
-        name: targetName || "神祕攝影師",
-        avatar: targetName || "default",
-        style: "街舞動態攝影 / 韓系直拍",
-        rating: "4.9"
+        id: pg.id,
+        name: pg.name,
+        avatar: pg.name,
+        style: pg.style,
+        rating: pg.avg_rating,
+        reviewCount: pg.review_count
     };
-    res.render('review_photographer', { targetPhotographer, photoReviews });
+    const photoReviews = store.listPhotographerReviews(pg.id).map(r => ({
+        name: '舞者 ' + r.reviewer_name,
+        rating: String(r.rating),
+        tags: r.tags,
+        comment: r.comment,
+        date: String(r.created_at).slice(0, 10)
+    }));
+
+    res.render('review_photographer', {
+        targetPhotographer,
+        photoReviews,
+        canReview: !!me && me.id !== pg.id,
+        notice: req.query.msg === 'saved' ? { type: 'success', text: '評價已送出，謝謝你的回饋！' } : null
+    });
 });
 
 app.post('/submit-photo-review', (req, res) => {
     const me = req.session.user;
     if (!me) return res.redirect('/login');
 
-    const targetName = String(req.body.targetName || '').trim().slice(0, 30);
+    const pg = store.getActivePhotographerByName(String(req.body.targetName || '').trim());
+    if (!pg || pg.id === me.id) return res.redirect('/photographers');
+
     const rating = String(req.body.rating || '');
     const comment = String(req.body.comment || '').trim();
     const rawTags = req.body.tags;
-    const selectedTags = (Array.isArray(rawTags) ? rawTags : rawTags ? [rawTags] : [])
-        .filter(tag => PHOTO_REVIEW_TAGS.includes(tag));
+    const selectedTags = [...new Set((Array.isArray(rawTags) ? rawTags : rawTags ? [rawTags] : [])
+        .filter(tag => PHOTO_REVIEW_TAGS.includes(tag)))];
 
-    const back = `/review/photographer?target=${encodeURIComponent(targetName)}`;
+    const back = `/review/photographer?target=${encodeURIComponent(pg.name)}`;
     if (!/^[1-5]$/.test(rating) || comment.length < 1 || comment.length > MAX_REVIEW_COMMENT) return res.redirect(back);
     if (!reviewLimiter.hit('photo|' + me.id)) return res.status(429).send('送出太頻繁，請稍後再試');
 
-    photoReviews.unshift({
-        name: '舞者 ' + me.name,
-        rating,
-        tags: [...new Set(selectedTags)],
-        comment,
-        date: new Date().toISOString().split('T')[0]
-    });
-    if (photoReviews.length > MAX_PHOTO_REVIEWS) photoReviews.length = MAX_PHOTO_REVIEWS;
-
-    res.redirect(back);
+    store.savePhotographerReview(me.id, pg.id, Number(rating), selectedTags, comment);
+    res.redirect(back + '&msg=saved');
 });
 
 app.get('/share', (req, res) => res.render('share'));

@@ -18,37 +18,13 @@
            <!-- 篩選標籤 (升級為實體可點擊、帶參數連結，完全保留原本 UI 樣式與佈局) -->
             <div class="tag-scroller" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 12px; margin-bottom: 16px; -webkit-overflow-scrolling: touch;">
                 
-                <!-- 全部風格 -->
-                <a href="/photographers?style=全部風格" 
-                class="tag-item <%= currentStyle === '全部風格' ? 'active' : '' %>" 
-                style="text-decoration: none; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: bold; white-space: nowrap; 
-                        <%= currentStyle === '全部風格' ? 'background: #823A00; color: white;' : 'background: #F0F0F0; color: #555;' %>">
-                    全部風格
-                </a>
-
-                <!-- 街舞動態 -->
-                <a href="/photographers?style=街舞動態" 
-                class="tag-item <%= currentStyle === '街舞動態' ? 'active' : '' %>" 
-                style="text-decoration: none; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: bold; white-space: nowrap; 
-                        <%= currentStyle === '街舞動態' ? 'background: #823A00; color: white;' : 'background: #F0F0F0; color: #555;' %>">
-                    街舞動態
-                </a>
-
-                <!-- K-Pop直拍 -->
-                <a href="/photographers?style=K-Pop直拍" 
-                class="tag-item <%= currentStyle === 'K-Pop直拍' ? 'active' : '' %>" 
-                style="text-decoration: none; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: bold; white-space: nowrap; 
-                        <%= currentStyle === 'K-Pop直拍' ? 'background: #823A00; color: white;' : 'background: #F0F0F0; color: #555;' %>">
-                    K-Pop直拍
-                </a>
-
-                <!-- 活動劇照 -->
-                <a href="/photographers?style=活動劇照" 
-                class="tag-item <%= currentStyle === '活動劇照' ? 'active' : '' %>" 
-                style="text-decoration: none; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: bold; white-space: nowrap; 
-                        <%= currentStyle === '活動劇照' ? 'background: #823A00; color: white;' : 'background: #F0F0F0; color: #555;' %>">
-                    活動劇照
-                </a>
+                <% ['全部風格'].concat(photoStyles).forEach(function(s) { %>
+                    <a href="/photographers?style=<%= encodeURIComponent(s) %>"
+                       class="tag-item <%= currentStyle === s ? 'active' : '' %>"
+                       style="text-decoration: none; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: bold; white-space: nowrap; <%= currentStyle === s ? 'background: #823A00; color: white;' : 'background: #F0F0F0; color: #555;' %>">
+                        <%= s %>
+                    </a>
+                <% }); %>
 
             </div>
 
@@ -76,18 +52,24 @@
                                         🎥 擅長風格：<span style="color: #222; font-weight: bold;"><%= photographer.style %></span>
                                     </p>
                                     
+                                    <% if (photographer.bio) { %>
+                                        <p style="font-size: 12px; color: #777; margin: 0 0 6px 0; line-height: 1.5;"><%= photographer.bio %></p>
+                                    <% } %>
+                                    <p style="font-size: 12px; color: #888; margin: 0 0 4px 0;">
+                                        <%= photographer.reviewCount > 0 ? '★ ' + photographer.rating + '（' + photographer.reviewCount + ' 則評價）' : '尚無評價' %>
+                                    </p>
                                     <p style="font-size: 14px; color: #D32F2F; margin: 0; font-weight: 900;">
                                         💰 服務報價：$<%= photographer.price %>/hr
                                     </p>
                                 </div>
                             </div>
 
-                            <div style="background: #FAFFA; border-top: 1px solid #F0F0F0; padding: 12px 16px; display: flex; justify-content: flex-end; gap: 10px;">
-                                <a href="/review/photographer?target=<%= photographer.name %>" style="font-size: 12px; color: #666; text-decoration: none; padding: 6px 12px; border: 1px solid #DDD; border-radius: 10px; font-weight: bold;">
+                            <div style="background: #FAFAFA; border-top: 1px solid #F0F0F0; padding: 12px 16px; display: flex; justify-content: flex-end; gap: 10px;">
+                                <a href="/review/photographer?target=<%= encodeURIComponent(photographer.name) %>" style="font-size: 12px; color: #666; text-decoration: none; padding: 6px 12px; border: 1px solid #DDD; border-radius: 10px; font-weight: bold;">
                                     ⭐ 觀看評價
                                 </a>
-                                <a href="/chat" style="font-size: 12px; color: white; background: #823A00; text-decoration: none; padding: 6px 16px; border-radius: 10px; font-weight: bold; display: flex; align-items: center; gap: 4px;">
-                                    💬 預約諮詢
+                                <a href="/chat/<%= photographer.id %>" style="font-size: 12px; color: white; background: #823A00; text-decoration: none; padding: 6px 16px; border-radius: 10px; font-weight: bold; display: flex; align-items: center; gap: 4px;">
+                                    💬 私訊洽詢
                                 </a>
                             </div>
 
@@ -96,7 +78,7 @@
                     <% }); %>
                 <% } else { %>
                     <div style="text-align: center; padding: 40px 20px; color: #999; font-size: 14px;">
-                        📌 目前暫無符合條件的舞者攝影師。
+                        📌 目前還沒有符合條件的攝影師。到「我的」頁面開啟攝影師身份，成為第一位！
                     </div>
                 <% } %>
 
