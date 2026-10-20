@@ -3,6 +3,8 @@ const bodyParser = require('body-parser');
 const app = express();
 const path = require('path');
 const session = require('express-session');
+const bcrypt = require('bcryptjs');
+const users = require('./db');
 
 // --- 基礎設定 ---
 app.set('view engine', 'ejs');
@@ -11,10 +13,19 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // --- 1. Session 設定 ---
+// secret 請透過環境變數 SESSION_SECRET 提供；正式環境（NODE_ENV=production）沒設定會直接報錯
+if (!process.env.SESSION_SECRET && process.env.NODE_ENV === 'production') {
+    throw new Error('請設定環境變數 SESSION_SECRET');
+}
 app.use(session({
-    secret: 'dancehub-secret',
+    secret: process.env.SESSION_SECRET || 'dev-only-secret-change-me',
     resave: false,
-    saveUninitialized: true
+    saveUninitialized: false,
+    cookie: {
+        httpOnly: true,
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 天
+    }
 }));
 
 const rooms = [
@@ -91,12 +102,17 @@ app.get('/', (req, res) => {
 
 // 1. 顯示登入頁面
 app.get('/login', (req, res) => {
-    res.render('login');
+    if (req.session.user) return res.redirect('/me');
+    res.render('login', {
+        error: null,
+        username: '',
+        notice: req.query.registered ? '註冊成功，請登入' : null
+    });
 });
 
 // 2. 顯示註冊頁面
 app.get('/register', (req, res) => {
-    res.render('register');
+    res.render('register', { error: null, form: { name: '', email: '' } });
 });
 
 // 3. 顯示法律條款與隱私權政策頁面
@@ -105,49 +121,91 @@ app.get('/terms', (req, res) => {
 });
 
 // 登入邏輯
-app.post('/login', (req, res) => {
-    const { username } = req.body;
-    
-    if (!username) return res.redirect('/login');
+// 帳號不存在時也跑一次 bcrypt，讓回應時間一致，避免被用來探測哪些帳號存在
+const DUMMY_HASH = bcrypt.hashSync('dummy-password-for-timing', 10);
 
-    const currentReports = userReportsCounter[username] || 0;
-    
-    if (currentReports >= 5) {
-        return res.send(`
-            <script>
-                alert('您的帳號因被檢舉次數達 ${currentReports} 次，已被系統永久停權。');
-                window.location.href = '/login';
-            </script>
-        `);
+// 不分大小寫累計檢舉次數
+function getReportCount(name) {
+    const target = String(name).toLowerCase();
+    return Object.keys(userReportsCounter)
+        .filter(k => k.toLowerCase() === target)
+        .reduce((sum, k) => sum + userReportsCounter[k], 0);
+}
+
+app.post('/login', async (req, res) => {
+    const username = String(req.body.username || '').trim();
+    const password = String(req.body.password || '');
+
+    const fail = (status, error) => res.status(status).render('login', { error, username, notice: null });
+
+    if (!username || !password) return fail(400, '請輸入帳號與密碼');
+
+    try {
+        const account = users.findUserByLogin(username);
+        const passwordOk = await bcrypt.compare(password, account ? account.password_hash : DUMMY_HASH);
+
+        if (!account || !passwordOk) return fail(401, '帳號或密碼錯誤');
+
+        const currentReports = getReportCount(account.name);
+        if (currentReports >= 5) {
+            return fail(403, `您的帳號因被檢舉次數達 ${currentReports} 次，已被系統永久停權。`);
+        }
+
+        // 登入成功後重新產生 session，避免 session fixation
+        req.session.regenerate((err) => {
+            if (err) {
+                console.error('登入失敗:', err);
+                return fail(500, '登入失敗，請稍後再試');
+            }
+            req.session.user = {
+                id: account.id,
+                name: account.name,
+                avatarSeed: account.name,
+                reports: currentReports,
+                isWarning: currentReports === 4
+            };
+            req.session.save(() => res.redirect('/me'));
+        });
+    } catch (err) {
+        console.error('登入失敗:', err);
+        return fail(500, '登入失敗，請稍後再試');
     }
-
-    req.session.user = { 
-        name: username, 
-        avatarSeed: username, 
-        reports: currentReports,
-        isWarning: currentReports === 4 
-    }; 
-    
-    return res.redirect('/me');
 });
 
 app.post('/register', async (req, res) => {
+    const name = String(req.body.name || '').trim();
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const password = String(req.body.password || '');
+    const { agreeTerms } = req.body;
+
+    const form = { name, email };
+    const fail = (status, error) => res.status(status).render('register', { error, form });
+
+    if (!agreeTerms) return fail(400, '必須同意服務條款與隱私權政策才能完成註冊');
+    if (name.length < 2 || name.length > 20) return fail(400, '暱稱需為 2 到 20 個字');
+    if (name.includes('@')) return fail(400, '暱稱不能包含 @');
+    if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail(400, '請輸入有效的電子信箱');
+    if (password.length < 6) return fail(400, '密碼至少需要 6 個字元');
+    if (Buffer.byteLength(password, 'utf8') > 72) return fail(400, '密碼過長，請縮短一些');
+    if (users.findUserByName(name)) return fail(409, '這個暱稱已被使用');
+    if (users.findUserByEmail(email)) return fail(409, '這個電子信箱已經註冊過了');
+
     try {
-        const { name, email, password, agreeTerms } = req.body;
-
-        if (!agreeTerms) {
-            return res.status(400).send("必須同意服務條款與隱私權政策才能完成註冊");
-        }
-
-        console.log(`使用者 ${name} (${email}) 註冊成功`);
-        res.redirect('/login');
+        const passwordHash = await bcrypt.hash(password, 10);
+        users.createUser(name, email, passwordHash);
+        return res.redirect('/login?registered=1');
     } catch (err) {
-        console.error("註冊失敗:", err);
-        res.status(500).send("註冊失敗，請重試");
+        if (err && String(err.code).startsWith('SQLITE_CONSTRAINT')) {
+            return fail(409, '暱稱或電子信箱已被使用');
+        }
+        console.error('註冊失敗:', err);
+        return fail(500, '註冊失敗，請重試');
     }
 });
 
-app.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/'); });
+app.get('/logout', (req, res) => {
+    req.session.destroy(() => res.redirect('/'));
+});
 
 app.get('/me', (req, res) => {
     if (!req.session.user) {
@@ -448,4 +506,4 @@ app.post('/users/:id/rate', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`DanceHub 伺服器已啟動：http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`DanceHub 伺服器已啟動：http://localhost:${PORT}`));
