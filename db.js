@@ -99,6 +99,32 @@ db.exec(`
     );
 
     CREATE INDEX IF NOT EXISTS idx_partner_reviews_target ON partner_reviews(target_id, id);
+
+    -- 攝影師檔案：任何使用者都能開啟，active = 0 代表暫停接案（不出現在列表）
+    CREATE TABLE IF NOT EXISTS photographers (
+        user_id    INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        price      INTEGER NOT NULL CHECK (price BETWEEN 0 AND 100000),
+        style      TEXT NOT NULL,
+        location   TEXT NOT NULL,
+        bio        TEXT NOT NULL DEFAULT '',
+        active     INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    -- 攝影師評價：每人對同一位攝影師只有一則（再送出會更新），不能評價自己
+    CREATE TABLE IF NOT EXISTS photographer_reviews (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        reviewer_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        photographer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        rating          INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+        tags            TEXT NOT NULL DEFAULT '',
+        comment         TEXT NOT NULL,
+        created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+        UNIQUE (reviewer_id, photographer_id),
+        CHECK (reviewer_id <> photographer_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_photo_reviews_target ON photographer_reviews(photographer_id, id);
 `);
 
 const stmts = {
@@ -239,6 +265,29 @@ const reviewStmts = {
         WHERE r.target_id = ? ORDER BY r.id DESC LIMIT 50`)
 };
 
+const PHOTOGRAPHER_SELECT = `
+    SELECT u.id, u.name, p.price, p.style, p.location, p.bio, p.active,
+           (SELECT ROUND(AVG(rating), 1) FROM photographer_reviews WHERE photographer_id = u.id) AS avg_rating,
+           (SELECT COUNT(*) FROM photographer_reviews WHERE photographer_id = u.id) AS review_count
+    FROM photographers p JOIN users u ON u.id = p.user_id`;
+
+const photographerStmts = {
+    upsert: db.prepare(`INSERT INTO photographers (user_id, price, style, location, bio, active) VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(user_id) DO UPDATE SET price = excluded.price, style = excluded.style, location = excluded.location,
+            bio = excluded.bio, active = excluded.active, updated_at = datetime('now')`),
+    deactivate: db.prepare("UPDATE photographers SET active = 0, updated_at = datetime('now') WHERE user_id = ?"),
+    byUserId: db.prepare(PHOTOGRAPHER_SELECT + ' WHERE u.id = ?'),
+    byName: db.prepare(PHOTOGRAPHER_SELECT + ' WHERE u.name = ?'),
+    listAll: db.prepare(PHOTOGRAPHER_SELECT + ' WHERE p.active = 1 ORDER BY p.updated_at DESC, u.id DESC LIMIT 100'),
+    listByStyle: db.prepare(PHOTOGRAPHER_SELECT + ' WHERE p.active = 1 AND p.style = ? ORDER BY p.updated_at DESC, u.id DESC LIMIT 100'),
+    upsertReview: db.prepare(`INSERT INTO photographer_reviews (reviewer_id, photographer_id, rating, tags, comment) VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(reviewer_id, photographer_id) DO UPDATE SET rating = excluded.rating, tags = excluded.tags,
+            comment = excluded.comment, created_at = datetime('now')`),
+    reviews: db.prepare(`SELECT r.id, r.rating, r.tags, r.comment, r.created_at, u.name AS reviewer_name
+        FROM photographer_reviews r JOIN users u ON u.id = r.reviewer_id
+        WHERE r.photographer_id = ? ORDER BY r.id DESC LIMIT 50`)
+};
+
 const bookingStmts = {
     insert: db.prepare('INSERT INTO bookings (user_id, room_id, date, start_hour, duration, price) VALUES (?, ?, ?, ?, ?, ?)'),
     insertSlot: db.prepare('INSERT INTO booking_slots (booking_id, room_id, date, hour) VALUES (?, ?, ?, ?)'),
@@ -305,6 +354,23 @@ module.exports = {
     // --- partner reviews ---
     saveReview: (reviewerId, targetId, rating, comment) => reviewStmts.upsert.run(reviewerId, targetId, rating, comment).changes,
     listReviews: (targetId) => reviewStmts.list.all(targetId),
+
+    // --- photographers ---
+    savePhotographer: (userId, { price, style, location, bio }) => photographerStmts.upsert.run(userId, price, style, location, bio, 1).changes,
+    deactivatePhotographer: (userId) => photographerStmts.deactivate.run(userId).changes,
+    getPhotographerByUserId: (userId) => photographerStmts.byUserId.get(userId),
+    // 只回傳「已開啟接案」的攝影師；自己的檔案用 getPhotographerByUserId
+    getActivePhotographerByName: (name) => {
+        const row = photographerStmts.byName.get(name);
+        return row && row.active === 1 ? row : undefined;
+    },
+    listPhotographers: (style) => style ? photographerStmts.listByStyle.all(style) : photographerStmts.listAll.all(),
+    savePhotographerReview: (reviewerId, photographerId, rating, tags, comment) =>
+        photographerStmts.upsertReview.run(reviewerId, photographerId, rating, tags.join(','), comment).changes,
+    listPhotographerReviews: (photographerId) => photographerStmts.reviews.all(photographerId).map(r => ({
+        ...r,
+        tags: r.tags ? r.tags.split(',') : []
+    })),
 
     // --- bookings ---
     createBooking: (userId, roomId, date, startHour, duration, price) =>

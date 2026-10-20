@@ -441,28 +441,39 @@
                     </div>
 
                     <div class="photographer-panel-card">
-                        <div class="photographer-status-box" style="<%= user.isPhotographer ? '' : 'background: #FAFAFA; border-color: #EFEFEF; color: #666;' %>">
-                            狀態：<strong><%= user.isPhotographer ? '🟢 已開啟攝影接案服務' : '⚪ 未開啟攝影服務' %></strong>
-                            <% if(user.isPhotographer) { %>
-                                <br>當前定價：<span style="color: #823A00; font-weight: bold;">$<%= user.photoPrice %>/hr</span>
-                                <br>當前風格：<span style="color: #555; font-weight: 500;"><%= user.photoStyle %></span>
+                        <div class="photographer-status-box" style="<%= photographer.active ? '' : 'background: #FAFAFA; border-color: #EFEFEF; color: #666;' %>">
+                            狀態：<strong><%= photographer.active ? '🟢 已開啟攝影接案服務' : '⚪ 未開啟攝影服務' %></strong>
+                            <% if (photographer.active) { %>
+                                <br>當前定價：<span style="color: #823A00; font-weight: bold;">$<%= photographer.price %>/hr</span>
+                                <br>當前風格：<span style="color: #555; font-weight: 500;"><%= photographer.style %> · <%= photographer.location %></span>
                             <% } %>
                         </div>
 
                         <form action="/update-photographer" method="POST" style="display: flex; flex-direction: column; gap: 14px;">
                             <div style="display: flex; gap: 16px;">
                                 <label style="font-size: 13px; font-weight: 700; color: #333; cursor: pointer;">
-                                    <input type="radio" name="isPhotographer" value="true" <%= user.isPhotographer ? 'checked' : '' %>> 開啟攝影師身份
+                                    <input type="radio" name="isPhotographer" value="true" <%= photographer.active ? 'checked' : '' %>> 開啟攝影師身份
                                 </label>
                                 <label style="font-size: 13px; font-weight: 700; color: #333; cursor: pointer;">
-                                    <input type="radio" name="isPhotographer" value="false" <%= !user.isPhotographer ? 'checked' : '' %>> 關閉身份
+                                    <input type="radio" name="isPhotographer" value="false" <%= !photographer.active ? 'checked' : '' %>> 暫停接案
                                 </label>
                             </div>
 
                             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                                <input type="number" name="photoPrice" value="<%= user.photoPrice %>" placeholder="時薪 (例: 1500)" class="photo-input-field" style="min-width: 100px;" required>
-                                <input type="text" name="photoStyle" value="<%= user.photoStyle %>" placeholder="風格 (例: 街舞動態/日系)" class="photo-input-field" style="flex: 2; min-width: 150px;" required>
+                                <input type="number" name="photoPrice" value="<%= photographer.price %>" placeholder="時薪 (例: 1500)" min="100" max="100000" class="photo-input-field" style="min-width: 100px;">
+                                <select name="photoStyle" class="photo-input-field" style="flex: 1; min-width: 120px;">
+                                    <% photoStyles.forEach(function(s) { %>
+                                        <option value="<%= s %>" <%= photographer.style === s ? 'selected' : '' %>><%= s %></option>
+                                    <% }); %>
+                                </select>
+                                <select name="photoLocation" class="photo-input-field" style="flex: 1; min-width: 100px;">
+                                    <% photoLocations.forEach(function(l) { %>
+                                        <option value="<%= l %>" <%= photographer.location === l ? 'selected' : '' %>><%= l %></option>
+                                    <% }); %>
+                                </select>
                             </div>
+
+                            <textarea name="photoBio" rows="2" maxlength="<%= maxPhotoBio %>" placeholder="簡單介紹自己與作品風格（選填，最多 <%= maxPhotoBio %> 字）" class="photo-input-field" style="resize: none;"><%= photographer.bio %></textarea>
 
                             <button type="submit" class="btn-update-photo">
                                 💾 儲存並更新我的攝影檔案
