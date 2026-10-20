@@ -60,6 +60,31 @@ db.exec(`
 
     CREATE INDEX IF NOT EXISTS idx_reports_target ON reports(target_id, status);
     CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status, id);
+
+    -- 預約：date 為台北日期 YYYY-MM-DD；booking_slots 每個被占用的整點一列，
+    -- 以主鍵 (room_id, date, hour) 保證同一教室同一小時不會被重複預約
+    CREATE TABLE IF NOT EXISTS bookings (
+        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        room_id      INTEGER NOT NULL,
+        date         TEXT NOT NULL,
+        start_hour   INTEGER NOT NULL,
+        duration     INTEGER NOT NULL,
+        price        INTEGER NOT NULL,
+        status       TEXT NOT NULL DEFAULT 'confirmed' CHECK (status IN ('confirmed', 'cancelled')),
+        created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+        cancelled_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS booking_slots (
+        booking_id INTEGER NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+        room_id    INTEGER NOT NULL,
+        date       TEXT NOT NULL,
+        hour       INTEGER NOT NULL,
+        PRIMARY KEY (room_id, date, hour)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_bookings_user ON bookings(user_id, status, date);
 `);
 
 const stmts = {
@@ -192,6 +217,35 @@ const createPostTx = db.transaction((authorId, content, tags) => {
     return postId;
 });
 
+const bookingStmts = {
+    insert: db.prepare('INSERT INTO bookings (user_id, room_id, date, start_hour, duration, price) VALUES (?, ?, ?, ?, ?, ?)'),
+    insertSlot: db.prepare('INSERT INTO booking_slots (booking_id, room_id, date, hour) VALUES (?, ?, ?, ?)'),
+    byId: db.prepare('SELECT * FROM bookings WHERE id = ?'),
+    bookedHours: db.prepare('SELECT hour FROM booking_slots WHERE room_id = ? AND date = ? ORDER BY hour'),
+    activeCount: db.prepare(`SELECT COUNT(*) AS n FROM bookings
+        WHERE user_id = ? AND status = 'confirmed'
+          AND (date > ? OR (date = ? AND start_hour + duration > ?))`),
+    upcoming: db.prepare(`SELECT * FROM bookings
+        WHERE user_id = ? AND status = 'confirmed' AND date >= ?
+        ORDER BY date, start_hour LIMIT 50`),
+    cancel: db.prepare(`UPDATE bookings SET status = 'cancelled', cancelled_at = datetime('now')
+        WHERE id = ? AND user_id = ? AND status = 'confirmed'`),
+    deleteSlots: db.prepare('DELETE FROM booking_slots WHERE booking_id = ?')
+};
+
+// 預約與占用時段在同一個交易裡寫入，任何一小時已被占用就整筆失敗（SQLITE_CONSTRAINT）
+const createBookingTx = db.transaction((userId, roomId, date, startHour, duration, price) => {
+    const id = bookingStmts.insert.run(userId, roomId, date, startHour, duration, price).lastInsertRowid;
+    for (let h = startHour; h < startHour + duration; h++) bookingStmts.insertSlot.run(id, roomId, date, h);
+    return id;
+});
+
+const cancelBookingTx = db.transaction((id, userId) => {
+    const changes = bookingStmts.cancel.run(id, userId).changes;
+    if (changes) bookingStmts.deleteSlots.run(id);
+    return changes;
+});
+
 module.exports = {
     db,
 
@@ -225,6 +279,15 @@ module.exports = {
     markConversationRead: (receiverId, senderId) => stmts.markRead.run(receiverId, senderId).changes,
     countUnread: (userId) => stmts.countUnread.get(userId).n,
     listConversations: (userId) => stmts.conversations.all({ me: userId }),
+
+    // --- bookings ---
+    createBooking: (userId, roomId, date, startHour, duration, price) =>
+        createBookingTx(userId, roomId, date, startHour, duration, price),
+    getBooking: (id) => bookingStmts.byId.get(id),
+    listBookedHours: (roomId, date) => bookingStmts.bookedHours.all(roomId, date).map(r => r.hour),
+    countActiveBookings: (userId, today, hour) => bookingStmts.activeCount.get(userId, today, today, hour).n,
+    listUpcomingBookings: (userId, today) => bookingStmts.upcoming.all(userId, today),
+    cancelBooking: (id, userId) => cancelBookingTx(id, userId),
 
     // --- reports ---
     REPORT_BAN_THRESHOLD,
