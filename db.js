@@ -126,6 +126,19 @@ db.exec(`
 
     CREATE INDEX IF NOT EXISTS idx_photo_reviews_target ON photographer_reviews(photographer_id, id);
 
+    -- 通知：type 只用來分類圖示；link 一律是站內路徑
+    CREATE TABLE IF NOT EXISTS notifications (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        type       TEXT NOT NULL,
+        text       TEXT NOT NULL,
+        link       TEXT NOT NULL DEFAULT '',
+        read_at    TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, read_at, id);
+
     -- 攝影師作品集：只存外部連結（YouTube、Instagram、雲端相簿等）
     CREATE TABLE IF NOT EXISTS portfolio_items (
         id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -305,6 +318,17 @@ const portfolioStmts = {
     remove: db.prepare('DELETE FROM portfolio_items WHERE id = ? AND user_id = ?')
 };
 
+const NOTIFICATION_KEEP = 100; // 每位使用者最多保留最新 100 則
+
+const notifStmts = {
+    insert: db.prepare('INSERT INTO notifications (user_id, type, text, link) VALUES (?, ?, ?, ?)'),
+    trim: db.prepare(`DELETE FROM notifications WHERE user_id = ? AND id NOT IN
+        (SELECT id FROM notifications WHERE user_id = ? ORDER BY id DESC LIMIT ${NOTIFICATION_KEEP})`),
+    list: db.prepare('SELECT id, type, text, link, read_at, created_at FROM notifications WHERE user_id = ? ORDER BY id DESC LIMIT 50'),
+    unread: db.prepare('SELECT COUNT(*) AS n FROM notifications WHERE user_id = ? AND read_at IS NULL'),
+    markRead: db.prepare("UPDATE notifications SET read_at = datetime('now') WHERE user_id = ? AND read_at IS NULL")
+};
+
 const bookingStmts = {
     insert: db.prepare('INSERT INTO bookings (user_id, room_id, date, start_hour, duration, price) VALUES (?, ?, ?, ?, ?, ?)'),
     insertSlot: db.prepare('INSERT INTO booking_slots (booking_id, room_id, date, hour) VALUES (?, ?, ?, ?)'),
@@ -394,6 +418,15 @@ module.exports = {
     listPortfolio: (userId) => portfolioStmts.list.all(userId),
     countPortfolio: (userId) => portfolioStmts.count.get(userId).n,
     removePortfolioItem: (id, userId) => portfolioStmts.remove.run(id, userId).changes,
+
+    // --- notifications ---
+    notify: (userId, type, text, link = '') => {
+        notifStmts.insert.run(userId, type, String(text).slice(0, 200), link);
+        notifStmts.trim.run(userId, userId);
+    },
+    listNotifications: (userId) => notifStmts.list.all(userId),
+    countUnreadNotifications: (userId) => notifStmts.unread.get(userId).n,
+    markNotificationsRead: (userId) => notifStmts.markRead.run(userId).changes,
 
     // --- bookings ---
     createBooking: (userId, roomId, date, startHour, duration, price) =>
