@@ -504,6 +504,23 @@
                         <% } %>
                     </div>
 
+                    <div class="section-title-box with-top-margin">
+                        <h3 class="section-title">🗑️ 刪除帳號</h3>
+                    </div>
+
+                    <div class="info-card">
+                        <p style="font-size: 12px; color: #777; line-height: 1.6; margin-bottom: 10px;">
+                            刪除後，你的貼文、私訊、評價、預約、攝影師檔案與通知都會一併刪除，且無法復原。
+                        </p>
+                        <form action="/delete-account" method="POST" onsubmit="return confirm('真的要永久刪除帳號嗎？這個動作無法復原。');" style="display: flex; flex-direction: column; gap: 10px;">
+                            <input type="password" name="password" placeholder="輸入密碼確認" autocomplete="current-password" class="photo-input-field" required>
+                            <label style="font-size: 12px; color: #555;">
+                                <input type="checkbox" name="confirm" value="yes"> 我了解帳號與資料將被永久刪除
+                            </label>
+                            <button type="submit" style="border: 1px solid #FFCDD2; background: #fff; color: #C62828; border-radius: 10px; padding: 10px; font-size: 13px; font-weight: 700; cursor: pointer;">永久刪除我的帳號</button>
+                        </form>
+                    </div>
+
                 </div> <!-- 右側欄結束 -->
             </div> <!-- Grid 結束 -->
             

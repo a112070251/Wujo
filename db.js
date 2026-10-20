@@ -153,6 +153,8 @@ db.exec(`
 const stmts = {
     // --- users ---
     userById: db.prepare('SELECT id, name, email, created_at FROM users WHERE id = ?'),
+    userWithHash: db.prepare('SELECT id, name, email, password_hash FROM users WHERE id = ?'),
+    deleteUser: db.prepare('DELETE FROM users WHERE id = ?'),
     byName: db.prepare('SELECT * FROM users WHERE name = ?'),
     byEmail: db.prepare('SELECT * FROM users WHERE email = ?'),
     byLogin: db.prepare('SELECT * FROM users WHERE name = ? OR email = ?'),
@@ -363,6 +365,9 @@ module.exports = {
 
     // --- users ---
     findUserById: (id) => stmts.userById.get(id),
+    findUserWithHashById: (id) => stmts.userWithHash.get(id),
+    // 刪除帳號：貼文、私訊、評價、預約、攝影師檔案、通知等都會一併刪除（ON DELETE CASCADE）
+    deleteUser: (id) => stmts.deleteUser.run(id).changes,
     findUserByName: (name) => stmts.byName.get(name),
     findUserByEmail: (email) => stmts.byEmail.get(email),
     // 登入時可用「暱稱」或「電子信箱」
