@@ -78,6 +78,8 @@ const PHOTO_LOCATIONS = ['台北', '新北', '桃園', '台中', '台南', '高�
 const MIN_PHOTO_PRICE = 100;
 const MAX_PHOTO_PRICE = 100000;
 const MAX_PHOTO_BIO = 200;
+const MAX_ACTIVE_SHOOTS = 5;   // 同一客戶同時最多 5 筆進行中的拍攝邀請
+const MAX_SHOOT_NOTE = 200;
 const MAX_PORTFOLIO_ITEMS = 6;
 const MAX_PORTFOLIO_TITLE = 40;
 const MAX_PORTFOLIO_URL = 300;
@@ -347,7 +349,28 @@ app.get('/me', (req, res) => {
 
     const portfolio = Number.isInteger(req.session.user.id) ? store.listPortfolio(req.session.user.id) : [];
 
-    res.render('me', { user: req.session.user, bookings, notice, photographer, portfolio, maxPortfolio: MAX_PORTFOLIO_ITEMS, maxPortfolioTitle: MAX_PORTFOLIO_TITLE, photoStyles: PHOTO_STYLES, photoLocations: PHOTO_LOCATIONS, maxPhotoBio: MAX_PHOTO_BIO });
+    const toShootView = (s, role) => ({
+        id: s.id,
+        role,
+        otherName: role === 'client' ? s.photographer_name : s.client_name,
+        month: Number(s.date.slice(5, 7)),
+        day: Number(s.date.slice(8, 10)),
+        timeText: bookingRules.timeRangeLabel(s.start_hour, s.duration),
+        price: s.price,
+        note: s.note,
+        status: s.status,
+        canCancel: s.status === 'pending' || bookingRules.hoursUntilStart(s.date, s.start_hour) >= bookingRules.MIN_CANCEL_HOURS,
+        canRespond: role === 'photographer' && s.status === 'pending' && bookingRules.hoursUntilStart(s.date, s.start_hour) > 0
+    });
+    const hasId = Number.isInteger(req.session.user.id);
+    const shootsAsClient = hasId
+        ? store.listShootsForClient(req.session.user.id, today).filter(s => bookingRules.isUpcoming(s)).map(s => toShootView(s, 'client'))
+        : [];
+    const shootsAsPhotographer = hasId
+        ? store.listShootsForPhotographer(req.session.user.id, today).filter(s => bookingRules.isUpcoming(s)).map(s => toShootView(s, 'photographer'))
+        : [];
+
+    res.render('me', { user: req.session.user, bookings, shootsAsClient, shootsAsPhotographer, notice, photographer, portfolio, maxPortfolio: MAX_PORTFOLIO_ITEMS, maxPortfolioTitle: MAX_PORTFOLIO_TITLE, photoStyles: PHOTO_STYLES, photoLocations: PHOTO_LOCATIONS, maxPhotoBio: MAX_PHOTO_BIO });
 });
 
 // --- 刪除自己的帳號（需輸入密碼確認）---
@@ -512,7 +535,7 @@ app.get('/notifications', (req, res) => {
         ...n,
         unread: !n.read_at,
         time: timeAgo(n.created_at),
-        icon: ({ review: '⭐', report: '🛡️', warning: '⚠️' })[n.type] || '🔔'
+        icon: ({ review: '⭐', report: '🛡️', warning: '⚠️', shoot: '📷' })[n.type] || '🔔'
     }));
     // 先取出「是否未讀」再標為已讀，導覽列的紅點也一併歸零
     store.markNotificationsRead(me.id);
@@ -658,6 +681,16 @@ const BOOKING_MESSAGES = {
     del_blocked: { type: 'error', text: '你的帳號有已通過的檢舉紀錄，為保護其他使用者，無法自行刪除，請聯絡管理員。' },
     del_limit: { type: 'error', text: '嘗試次數過多，請 15 分鐘後再試。' },
     del_confirm: { type: 'error', text: '請勾選確認方塊，才能刪除帳號。' },
+    shoot_sent: { type: 'success', text: '拍攝邀請已送出，攝影師回覆後會通知你。' },
+    shoot_accepted: { type: 'success', text: '已確認這場拍攝，並通知對方。' },
+    shoot_declined: { type: 'success', text: '已婉拒這個邀請，並通知對方。' },
+    shoot_cancelled: { type: 'success', text: '拍攝預約已取消，並通知對方。' },
+    shoot_conflict: { type: 'error', text: '你在這個時段已經確認了另一場拍攝，無法重複接案。' },
+    shoot_limit: { type: 'error', text: `你同時最多只能有 ${MAX_ACTIVE_SHOOTS} 筆進行中的拍攝邀請。` },
+    shoot_dup: { type: 'error', text: '你已經送出過同一個開始時間的邀請了。' },
+    shoot_notfound: { type: 'error', text: '找不到這筆邀請，或它已經處理過了。' },
+    shoot_late: { type: 'error', text: `已確認的拍攝在開始前 ${bookingRules.MIN_CANCEL_HOURS} 小時內無法取消，請直接私訊對方。` },
+    shoot_expired: { type: 'error', text: '這個時段已經過了，無法再回覆。' },
     pg_saved: { type: 'success', text: '攝影師檔案已更新。' },
     pg_closed: { type: 'success', text: '已暫停接案，你不會出現在攝影師列表。' },
     pf_added: { type: 'success', text: '作品連結已新增。' },
@@ -855,6 +888,7 @@ app.get('/review/photographer', (req, res) => {
         name: pg.name,
         avatar: pg.name,
         style: pg.style,
+        price: pg.price,
         rating: pg.avg_rating,
         reviewCount: pg.review_count
     };
@@ -871,8 +905,92 @@ app.get('/review/photographer', (req, res) => {
         photoReviews,
         portfolio: store.listPortfolio(pg.id),
         canReview: !!me && me.id !== pg.id,
-        notice: req.query.msg === 'saved' ? { type: 'success', text: '評價已送出，謝謝你的回饋！' } : null
+        notice: req.query.msg === 'saved'
+            ? { type: 'success', text: '評價已送出，謝謝你的回饋！' }
+            : (Object.hasOwn(BOOKING_MESSAGES, req.query.msg) ? BOOKING_MESSAGES[req.query.msg] : null),
+        minDate: bookingRules.taipeiNow().date,
+        maxDate: bookingRules.addDays(bookingRules.taipeiNow().date, bookingRules.MAX_DAYS_AHEAD),
+        openHour: bookingRules.OPEN_HOUR,
+        closeHour: bookingRules.CLOSE_HOUR,
+        maxDuration: bookingRules.MAX_DURATION,
+        maxNote: MAX_SHOOT_NOTE
     });
+});
+
+// --- 拍攝邀請 ---
+app.post('/photographers/:id/request', (req, res) => {
+    const me = req.session.user;
+    if (!me) return res.redirect('/login');
+
+    const id = /^\d+$/.test(req.params.id) ? Number(req.params.id) : NaN;
+    const row = Number.isInteger(id) ? store.getPhotographerByUserId(id) : null;
+    if (!row || row.active !== 1 || row.id === me.id) return res.redirect('/photographers');
+
+    const date = String(req.body.date || '');
+    const startHour = /^\d+$/.test(String(req.body.startHour)) ? Number(req.body.startHour) : NaN;
+    const duration = /^\d+$/.test(String(req.body.duration)) ? Number(req.body.duration) : NaN;
+    const note = String(req.body.note || '').trim();
+    const back = (code) => res.redirect(`/review/photographer?target=${encodeURIComponent(row.name)}&msg=${code}`);
+
+    const check = bookingRules.validateBooking({ date, startHour, duration });
+    if (!check.ok) return back(check.code);
+    if (note.length > MAX_SHOOT_NOTE) return back('error');
+
+    const now = bookingRules.taipeiNow();
+    if (store.countActiveShoots(me.id, now.date, now.hour) >= MAX_ACTIVE_SHOOTS) return back('shoot_limit');
+
+    try {
+        store.createShootRequest(me.id, row.id, date, startHour, duration, row.price * duration, note);
+    } catch (err) {
+        if (err && (String(err.code).startsWith('SQLITE_CONSTRAINT') || /constraint failed/i.test(String(err.message)))) return back('shoot_dup');
+        console.error('拍攝邀請失敗:', err);
+        return back('error');
+    }
+
+    store.notify(row.id, 'shoot', `${me.name} 想預約你 ${bookingRules.dateLabel(date)} ${bookingRules.timeRangeLabel(startHour, duration)} 拍攝`, '/me');
+    back('shoot_sent');
+});
+
+app.post('/shoots/:id/cancel', (req, res) => {
+    const me = req.session.user;
+    if (!me) return res.redirect('/login');
+
+    const id = /^\d+$/.test(req.params.id) ? Number(req.params.id) : NaN;
+    const s = Number.isInteger(id) ? store.getShoot(id) : null;
+    if (!s || (s.client_id !== me.id && s.photographer_id !== me.id) || !['pending', 'accepted'].includes(s.status)) {
+        return res.redirect('/me?msg=shoot_notfound');
+    }
+    if (s.status === 'accepted' && bookingRules.hoursUntilStart(s.date, s.start_hour) < bookingRules.MIN_CANCEL_HOURS) {
+        return res.redirect('/me?msg=shoot_late');
+    }
+
+    if (store.cancelShoot(id, me.id)) {
+        const otherId = s.client_id === me.id ? s.photographer_id : s.client_id;
+        store.notify(otherId, 'shoot', `${me.name} 取消了 ${bookingRules.dateLabel(s.date)} ${bookingRules.timeRangeLabel(s.start_hour, s.duration)} 的拍攝`, '/me');
+    }
+    res.redirect('/me?msg=shoot_cancelled');
+});
+
+app.post('/shoots/:id/:action', (req, res) => {
+    const me = req.session.user;
+    if (!me) return res.redirect('/login');
+
+    const action = req.params.action;
+    const id = /^\d+$/.test(req.params.id) ? Number(req.params.id) : NaN;
+    if (!Number.isInteger(id) || !['accept', 'decline'].includes(action)) return res.redirect('/me?msg=shoot_notfound');
+
+    const s = store.getShoot(id);
+    if (s && s.photographer_id === me.id && s.status === 'pending' && bookingRules.hoursUntilStart(s.date, s.start_hour) <= 0) {
+        return res.redirect('/me?msg=shoot_expired');
+    }
+
+    const result = store.respondShoot(id, me.id, action);
+    if (result === 'conflict') return res.redirect('/me?msg=shoot_conflict');
+    if (result !== 'ok') return res.redirect('/me?msg=shoot_notfound');
+
+    const label = `${bookingRules.dateLabel(s.date)} ${bookingRules.timeRangeLabel(s.start_hour, s.duration)}`;
+    store.notify(s.client_id, 'shoot', `${me.name} ${action === 'accept' ? '確認了' : '婉拒了'}你 ${label} 的拍攝邀請`, '/me');
+    res.redirect(`/me?msg=${action === 'accept' ? 'shoot_accepted' : 'shoot_declined'}`);
 });
 
 app.post('/submit-photo-review', (req, res) => {

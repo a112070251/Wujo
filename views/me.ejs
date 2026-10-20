@@ -435,6 +435,54 @@
                         <div class="info-card" style="font-size: 13px; color: #888;">目前沒有預約，到<a href="/venues" style="color:#823A00;font-weight:700;">教室列表</a>挑一間吧。</div>
                     <% } %>
 
+                    <!-- 拍攝預約 -->
+                    <div class="section-title-box with-top-margin">
+                        <h3 class="section-title">📷 拍攝預約</h3>
+                    </div>
+
+                    <% const shootGroups = [
+                        { title: '我發出的邀請', list: locals.shootsAsClient || [], empty: '還沒有進行中的拍攝預約，到<a href="/photographers" style="color:#823A00;font-weight:700;">攝影師列表</a>看看吧。' },
+                        { title: '收到的邀請', list: locals.shootsAsPhotographer || [], empty: '' }
+                    ]; %>
+                    <% shootGroups.forEach(function(group) { %>
+                        <% if (group.list.length > 0 || group.empty) { %>
+                            <p style="font-size: 12px; font-weight: 700; color: #888; margin: 4px 0 8px 2px;"><%= group.title %></p>
+                        <% } %>
+                        <% if (group.list.length === 0 && group.empty) { %>
+                            <div class="info-card" style="font-size: 13px; color: #888;"><%- group.empty %></div>
+                        <% } %>
+                        <% group.list.forEach(function(s) { %>
+                            <div class="info-card booking-item">
+                                <div class="booking-date-block">
+                                    <span class="booking-month"><%= s.month %>月</span>
+                                    <span class="booking-day"><%= s.day %></span>
+                                </div>
+                                <div class="booking-details">
+                                    <h4><%= s.timeText %> · <%= s.role === 'client' ? '攝影師 ' : '客戶 ' %><%= s.otherName %></h4>
+                                    <p>$ <%= s.price %> · <%= s.status === 'accepted' ? '✅ 已確認' : (s.role === 'photographer' ? '⏳ 等你回覆' : '⏳ 等待攝影師回覆') %></p>
+                                    <% if (s.note) { %><p>備註：<%= s.note %></p><% } %>
+                                    <div style="display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap;">
+                                        <% if (s.canRespond) { %>
+                                            <form action="/shoots/<%= s.id %>/accept" method="POST">
+                                                <button type="submit" style="border:none;background:#823A00;color:#fff;border-radius:8px;padding:4px 14px;font-size:12px;font-weight:700;cursor:pointer;">確認</button>
+                                            </form>
+                                            <form action="/shoots/<%= s.id %>/decline" method="POST">
+                                                <button type="submit" style="border:1px solid #DDD;background:#fff;color:#666;border-radius:8px;padding:4px 14px;font-size:12px;font-weight:700;cursor:pointer;">婉拒</button>
+                                            </form>
+                                        <% } %>
+                                        <% if (s.canCancel) { %>
+                                            <form action="/shoots/<%= s.id %>/cancel" method="POST" onsubmit="return confirm('確定要取消嗎？對方會收到通知。');">
+                                                <button type="submit" style="border:1px solid #FFCDD2;background:#fff;color:#C62828;border-radius:8px;padding:4px 14px;font-size:12px;font-weight:700;cursor:pointer;">取消</button>
+                                            </form>
+                                        <% } else { %>
+                                            <span style="font-size:11px;color:#999;">開始前 2 小時內無法取消</span>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </div>
+                        <% }); %>
+                    <% }); %>
+
                     <!-- 3. 舞者攝影師設定面板 -->
                     <div class="section-title-box with-top-margin">
                         <h3 class="section-title">📷 舞者攝影師設定面板</h3>

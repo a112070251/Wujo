@@ -67,7 +67,32 @@
             <% } %>
 
             <% if (locals.notice) { %>
-                <div style="font-size: 13px; padding: 12px 16px; border-radius: 12px; margin-bottom: 16px; background: #E8F5E9; color: #2E7D32;" role="status"><%= notice.text %></div>
+                <div style="font-size: 13px; padding: 12px 16px; border-radius: 12px; margin-bottom: 16px; background: <%= notice.type === 'success' ? '#E8F5E9' : '#FFEBEE' %>; color: <%= notice.type === 'success' ? '#2E7D32' : '#C62828' %>;" role="status"><%= notice.text %></div>
+            <% } %>
+
+            <!-- 預約拍攝（登入且不是本人才顯示） -->
+            <% if (locals.canReview) { %>
+            <div style="background: white; border-radius: 20px; padding: 20px; border: 1px solid #EFEFEF; margin-bottom: 24px;">
+                <h4 style="font-size: 15px; font-weight: 900; color: #222; margin: 0 0 4px 0;">📅 邀請 <%= targetPhotographer.name %> 拍攝</h4>
+                <p style="font-size: 12px; color: #888; margin: 0 0 12px 0;">時薪 $<%= targetPhotographer.price %>，送出後等攝影師確認，確認前不會收費（本站不處理付款）。</p>
+                <form action="/photographers/<%= targetPhotographer.id %>/request" method="POST" style="display: flex; flex-direction: column; gap: 10px;">
+                    <input type="date" name="date" min="<%= minDate %>" max="<%= maxDate %>" value="<%= minDate %>" required style="padding: 10px; border-radius: 10px; border: 1px solid #DDD; font-size: 13px;">
+                    <div style="display: flex; gap: 10px;">
+                        <select name="startHour" style="flex: 1; padding: 10px; border-radius: 10px; border: 1px solid #DDD; font-size: 13px; background: white;">
+                            <% for (let h = openHour; h < closeHour; h++) { %>
+                                <option value="<%= h %>"><%= String(h).padStart(2, '0') %>:00 開始</option>
+                            <% } %>
+                        </select>
+                        <select name="duration" style="flex: 1; padding: 10px; border-radius: 10px; border: 1px solid #DDD; font-size: 13px; background: white;">
+                            <% for (let d = 1; d <= maxDuration; d++) { %>
+                                <option value="<%= d %>"><%= d %> 小時（$<%= targetPhotographer.price * d %>）</option>
+                            <% } %>
+                        </select>
+                    </div>
+                    <textarea name="note" rows="2" maxlength="<%= maxNote %>" placeholder="想拍什麼、地點等備註（選填，最多 <%= maxNote %> 字）" style="padding: 10px; border-radius: 10px; border: 1px solid #DDD; font-size: 13px; resize: none; box-sizing: border-box;"></textarea>
+                    <button type="submit" style="background: #823A00; color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; font-size: 13px; cursor: pointer;">送出拍攝邀請</button>
+                </form>
+            </div>
             <% } %>
 
             <!-- 撰寫新評價表單（登入且不是本人才顯示） -->
