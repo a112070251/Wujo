@@ -200,7 +200,7 @@ app.get('/login', (req, res) => {
     res.render('login', {
         error: req.query.banned ? '您的帳號因被檢舉次數過多，已被系統停權。' : null,
         username: '',
-        notice: req.query.registered ? '註冊成功，請登入' : null
+        notice: req.query.registered ? '註冊成功，請登入' : (req.query.deleted ? '你的帳號與相關資料已刪除。' : null)
     });
 });
 
@@ -211,7 +211,7 @@ app.get('/register', (req, res) => {
 
 // 3. 顯示法律條款與隱私權政策頁面
 app.get('/terms', (req, res) => {
-    res.render('terms');
+    res.render('terms', { contactEmail: process.env.CONTACT_EMAIL || '' });
 });
 
 // 登入邏輯
@@ -348,6 +348,35 @@ app.get('/me', (req, res) => {
     const portfolio = Number.isInteger(req.session.user.id) ? store.listPortfolio(req.session.user.id) : [];
 
     res.render('me', { user: req.session.user, bookings, notice, photographer, portfolio, maxPortfolio: MAX_PORTFOLIO_ITEMS, maxPortfolioTitle: MAX_PORTFOLIO_TITLE, photoStyles: PHOTO_STYLES, photoLocations: PHOTO_LOCATIONS, maxPhotoBio: MAX_PHOTO_BIO });
+});
+
+// --- 刪除自己的帳號（需輸入密碼確認）---
+app.post('/delete-account', async (req, res) => {
+    const me = req.session.user;
+    if (!me) return res.redirect('/login');
+
+    const limitKey = `${req.ip}|delete|${me.id}`;
+    if (loginLimiter.isBlocked(limitKey)) return res.redirect('/me?msg=del_limit');
+    if (req.body.confirm !== 'yes') return res.redirect('/me?msg=del_confirm');
+
+    try {
+        const account = store.findUserWithHashById(me.id);
+        if (!account) return req.session.destroy(() => res.redirect('/login'));
+
+        const passwordOk = await bcrypt.compare(String(req.body.password || ''), account.password_hash);
+        if (!passwordOk) {
+            loginLimiter.hit(limitKey);
+            return res.redirect('/me?msg=del_wrong');
+        }
+        // 有已通過的檢舉紀錄時不能自行刪除，避免用刪帳號再重新註冊來洗掉黑名單
+        if (store.countApprovedReports(me.id) > 0) return res.redirect('/me?msg=del_blocked');
+
+        store.deleteUser(me.id);
+        req.session.destroy(() => res.redirect('/login?deleted=1'));
+    } catch (err) {
+        console.error('刪除帳號失敗:', err);
+        res.redirect('/me?msg=error');
+    }
 });
 
 app.post('/update-photographer', (req, res) => {
@@ -625,6 +654,10 @@ const BOOKING_MESSAGES = {
     cancelled: { type: 'success', text: '預約已取消。' },
     cancel_late: { type: 'error', text: `開始前 ${bookingRules.MIN_CANCEL_HOURS} 小時內無法取消，請直接聯絡教室。` },
     notfound: { type: 'error', text: '找不到這筆預約。' },
+    del_wrong: { type: 'error', text: '密碼不正確，帳號未刪除。' },
+    del_blocked: { type: 'error', text: '你的帳號有已通過的檢舉紀錄，為保護其他使用者，無法自行刪除，請聯絡管理員。' },
+    del_limit: { type: 'error', text: '嘗試次數過多，請 15 分鐘後再試。' },
+    del_confirm: { type: 'error', text: '請勾選確認方塊，才能刪除帳號。' },
     pg_saved: { type: 'success', text: '攝影師檔案已更新。' },
     pg_closed: { type: 'success', text: '已暫停接案，你不會出現在攝影師列表。' },
     pf_added: { type: 'success', text: '作品連結已新增。' },
