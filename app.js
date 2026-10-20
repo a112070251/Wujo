@@ -4,7 +4,9 @@ const app = express();
 const path = require('path');
 const session = require('express-session');
 const bcrypt = require('bcryptjs');
-const users = require('./db');
+const http = require('http');
+const { Server } = require('socket.io');
+const store = require('./db');
 
 // --- 基礎設定 ---
 app.set('view engine', 'ejs');
@@ -17,7 +19,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 if (!process.env.SESSION_SECRET && process.env.NODE_ENV === 'production') {
     throw new Error('請設定環境變數 SESSION_SECRET');
 }
-app.use(session({
+const sessionMiddleware = session({
     secret: process.env.SESSION_SECRET || 'dev-only-secret-change-me',
     resave: false,
     saveUninitialized: false,
@@ -26,7 +28,8 @@ app.use(session({
         sameSite: 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 天
     }
-}));
+});
+app.use(sessionMiddleware);
 
 const rooms = [
     { id: 0, name: "大安旗艦館", dist: "大安區", price: 500, lat: 25.0339, lng: 121.5434, image: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=500&auto=format&fit=crop" },
@@ -44,13 +47,6 @@ const photoReviews = [
     { name: "舞者 阿強", rating: "4", tags: ["很會引導動作"], comment: "很會引導不習慣面對鏡頭的舞者，燈光打得非常好看。美中不足是當天教室冷氣有點弱，但攝影師專業度沒話說！", date: "2026-05-29" }
 ];
 
-// 用戶檢舉計數器
-const userReportsCounter = {
-    'bad': 5,
-    'Ghoster': 3,
-    '256': 1
-};
-
 const partnerReviews = {
     '阿強': [
         { reviewer: '小雅', rating: '5', comment: '這週二一起在 Kinetics Studio 練 Breaking 非常愉快，排舞教學很有耐心！' }
@@ -60,36 +56,89 @@ const partnerReviews = {
     ]
 };
 
-// 黑名單展示資料
-const blacklistUsers = [
-    { 
-        name: 'bad', 
-        reasons: ['惡意取消'], 
-        reason: '惡意取消', 
-        date: '2026-03-10', 
-        avatar: 'bad',
-        reportCount: 5
-    },
-    { 
-        name: 'Ghoster', 
-        reasons: ['放鳥次數過多'], 
-        reason: '放鳥次數過多', 
-        date: '2026-03-05', 
-        avatar: 'Ghost',
-        reportCount: 3
-    }
-];
+// --- 貼文與訊息的共用設定 ---
+const POST_TAGS = ['找比賽', '練基礎', '拍片', 'K-Pop', 'HipHop', '街舞', 'Breaking', 'Popping'];
+const MAX_POST_LENGTH = 200;
+const MAX_MESSAGE_LENGTH = 500;
+const POST_ERRORS = {
+    empty: '貼文內容不能是空白',
+    toolong: `貼文最多 ${MAX_POST_LENGTH} 個字`
+};
 
-const allPosts = [
-    { id: "1", author: "小雅", avatar: "小雅", content: "4月練舞，北車，缺三人。", time: "2 小時前", hashtags: ["找比賽", "K-Pop"], lastMsg: "好喔！妳平常都在哪邊練習？" },
-    { id: "2", author: "小新", avatar: "小新", content: "12月，風格偏HipHop，希望有比賽經驗。", time: "5 小時前", hashtags: ["練基礎", "HipHop", "找比賽"], lastMsg: "那明天 18:00 見！" },
-    { id: "3", author: "阿強", avatar: "阿強", content: "想找人一起在西門町拍 Dance Cover！", time: "10 小時前", hashtags: ["拍片", "街舞", "HipHop"], lastMsg: "嘿，有興趣一起拍片嗎？" }
-];
+// --- 檢舉與管理設定 ---
+const REPORT_CATEGORIES = ['惡意取消或放鳥', '言論騷擾', '冒充或詐騙', '不當內容', '其他'];
+const MAX_REPORT_DETAIL = 500;
+const MAX_REPORT_EVIDENCE = 300;
+const MAX_REPORTS_PER_DAY = 5;
+const REPORT_MESSAGES = {
+    submitted: { type: 'success', text: '檢舉已送出，管理員審核通過後才會公開。' },
+    invalid: { type: 'error', text: `請選擇檢舉類別，並填寫 5 到 ${MAX_REPORT_DETAIL} 個字的說明（佐證最多 ${MAX_REPORT_EVIDENCE} 字）。` },
+    notfound: { type: 'error', text: '找不到這位使用者，請確認用戶名稱是否正確。' },
+    self: { type: 'error', text: '不能檢舉自己。' },
+    duplicate: { type: 'error', text: '你已經檢舉過這位使用者了，請等待管理員審核。' },
+    limit: { type: 'error', text: `為避免濫用，每人 24 小時內最多送出 ${MAX_REPORTS_PER_DAY} 件檢舉。` },
+    error: { type: 'error', text: '送出失敗，請稍後再試。' }
+};
+
+// 管理員以環境變數 ADMIN_EMAILS 指定（多個信箱用逗號分隔），登入時的信箱符合即為管理員
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean);
+
+function isAdminEmail(email) {
+    return !!email && ADMIN_EMAILS.includes(String(email).toLowerCase());
+}
+
+// 資料庫存的是 UTC 時間字串（YYYY-MM-DD HH:MM:SS）
+function parseDbTime(sqlUtc) {
+    return new Date(String(sqlUtc).replace(' ', 'T') + 'Z');
+}
+
+function timeAgo(sqlUtc) {
+    const t = parseDbTime(sqlUtc);
+    if (isNaN(t)) return '';
+    const diff = Math.max(0, Math.floor((Date.now() - t.getTime()) / 1000));
+    if (diff < 60) return '剛剛';
+    if (diff < 3600) return `${Math.floor(diff / 60)} 分鐘前`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} 小時前`;
+    if (diff < 7 * 86400) return `${Math.floor(diff / 86400)} 天前`;
+    return t.toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' });
+}
+
+function formatClock(sqlUtc) {
+    const t = parseDbTime(sqlUtc);
+    if (isNaN(t)) return '';
+    return t.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Taipei' });
+}
+
+function toPostView(row) {
+    return {
+        id: row.id,
+        authorId: row.author_id,
+        author: row.author_name,
+        content: row.content,
+        time: timeAgo(row.created_at),
+        hashtags: row.tags
+    };
+}
+
+// 已被停權（檢舉 5 次以上）的帳號，即使 session 還在也不能發文或傳訊
+function isBanned(user) {
+    return Number.isInteger(user.id) && store.countApprovedReports(user.id) >= store.REPORT_BAN_THRESHOLD;
+}
 
 // --- 3. 全域變數中間件 ---
 app.use((req, res, next) => {
-    res.locals.user = req.session.user || null;
-    res.locals.hasNewMsg = !!req.session.user;
+    const sessUser = req.session.user;
+    // 登入後才被停權的帳號，下一次操作就會被登出
+    if (sessUser && isBanned(sessUser)) {
+        return req.session.destroy(() => res.redirect('/login?banned=1'));
+    }
+    res.locals.user = sessUser || null;
+    res.locals.isAdmin = !!sessUser && isAdminEmail(sessUser.email);
+    res.locals.unreadCount = (sessUser && Number.isInteger(sessUser.id)) ? store.countUnread(sessUser.id) : 0;
+    res.locals.hasNewMsg = res.locals.unreadCount > 0;
     next();
 });
 
@@ -97,14 +146,18 @@ app.use((req, res, next) => {
 
 // 首頁路由
 app.get('/', (req, res) => {
-    res.render('index', { featuredPost: allPosts[0], featuredVenue: rooms[0] });
+    const latest = store.getLatestPost();
+    res.render('index', {
+        featuredPost: latest ? toPostView(latest) : null,
+        featuredVenue: rooms[0]
+    });
 });
 
 // 1. 顯示登入頁面
 app.get('/login', (req, res) => {
     if (req.session.user) return res.redirect('/me');
     res.render('login', {
-        error: null,
+        error: req.query.banned ? '您的帳號因被檢舉次數過多，已被系統停權。' : null,
         username: '',
         notice: req.query.registered ? '註冊成功，請登入' : null
     });
@@ -124,12 +177,9 @@ app.get('/terms', (req, res) => {
 // 帳號不存在時也跑一次 bcrypt，讓回應時間一致，避免被用來探測哪些帳號存在
 const DUMMY_HASH = bcrypt.hashSync('dummy-password-for-timing', 10);
 
-// 不分大小寫累計檢舉次數
+// 只計算管理員審核通過的檢舉
 function getReportCount(name) {
-    const target = String(name).toLowerCase();
-    return Object.keys(userReportsCounter)
-        .filter(k => k.toLowerCase() === target)
-        .reduce((sum, k) => sum + userReportsCounter[k], 0);
+    return store.countApprovedReportsByName(String(name));
 }
 
 app.post('/login', async (req, res) => {
@@ -141,7 +191,7 @@ app.post('/login', async (req, res) => {
     if (!username || !password) return fail(400, '請輸入帳號與密碼');
 
     try {
-        const account = users.findUserByLogin(username);
+        const account = store.findUserByLogin(username);
         const passwordOk = await bcrypt.compare(password, account ? account.password_hash : DUMMY_HASH);
 
         if (!account || !passwordOk) return fail(401, '帳號或密碼錯誤');
@@ -159,6 +209,7 @@ app.post('/login', async (req, res) => {
             }
             req.session.user = {
                 id: account.id,
+                email: account.email,
                 name: account.name,
                 avatarSeed: account.name,
                 reports: currentReports,
@@ -187,12 +238,12 @@ app.post('/register', async (req, res) => {
     if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return fail(400, '請輸入有效的電子信箱');
     if (password.length < 6) return fail(400, '密碼至少需要 6 個字元');
     if (Buffer.byteLength(password, 'utf8') > 72) return fail(400, '密碼過長，請縮短一些');
-    if (users.findUserByName(name)) return fail(409, '這個暱稱已被使用');
-    if (users.findUserByEmail(email)) return fail(409, '這個電子信箱已經註冊過了');
+    if (store.findUserByName(name)) return fail(409, '這個暱稱已被使用');
+    if (store.findUserByEmail(email)) return fail(409, '這個電子信箱已經註冊過了');
 
     try {
         const passwordHash = await bcrypt.hash(password, 10);
-        users.createUser(name, email, passwordHash);
+        store.createUser(name, email, passwordHash);
         return res.redirect('/login?registered=1');
     } catch (err) {
         if (err && String(err.code).startsWith('SQLITE_CONSTRAINT')) {
@@ -212,6 +263,13 @@ app.get('/me', (req, res) => {
         return res.redirect('/login'); 
     }
     
+    // 檢舉次數以資料庫為準（只算管理員審核通過的）
+    if (Number.isInteger(req.session.user.id)) {
+        const approved = store.countApprovedReports(req.session.user.id);
+        req.session.user.reports = approved;
+        req.session.user.isWarning = approved === store.REPORT_BAN_THRESHOLD - 1;
+    }
+
     if (typeof req.session.user.isPhotographer === 'undefined') {
         req.session.user.isPhotographer = false;
         req.session.user.photoPrice = "0";
@@ -234,74 +292,170 @@ app.post('/update-photographer', (req, res) => {
 });
 
 app.get('/blacklist', (req, res) => {
-    const searchQuery = req.query.search || '';
-    let filteredList = blacklistUsers;
+    const searchQuery = String(req.query.search || '').trim().slice(0, 50);
 
-    if (searchQuery) {
-        filteredList = blacklistUsers.filter(u => 
-            u.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-            u.reason.includes(searchQuery)
-        );
-    }
-    res.render('blacklist', { blacklisted: filteredList, searchQuery: searchQuery });
+    // 公開名單只含「管理員審核通過」的檢舉，且只顯示類別與次數，不公開檢舉人與詳細內容
+    const blacklisted = store.listBlacklist({ q: searchQuery }).map(r => ({
+        name: r.name,
+        avatar: r.name,
+        reason: r.categories.join('、'),
+        reportCount: r.report_count,
+        date: String(r.last_at || '').slice(0, 10)
+    }));
+
+    const notice = Object.hasOwn(REPORT_MESSAGES, req.query.msg) ? REPORT_MESSAGES[req.query.msg] : null;
+
+    res.render('blacklist', {
+        blacklisted,
+        searchQuery,
+        categories: REPORT_CATEGORIES,
+        maxDetail: MAX_REPORT_DETAIL,
+        maxEvidence: MAX_REPORT_EVIDENCE,
+        notice
+    });
 });
 
+// 提交檢舉：送出後是「待審核」，管理員通過後才會公開並計入次數
 app.post('/submit-blacklist', (req, res) => {
-    if (!req.session.user) return res.redirect('/login');
+    const me = req.session.user;
+    if (!me) return res.redirect('/login');
 
-    const { targetName, reason } = req.body;
-    if (targetName && reason) {
-        userReportsCounter[targetName] = (userReportsCounter[targetName] || 0) + 1;
-        const currentTotal = userReportsCounter[targetName];
+    const back = (code) => res.redirect('/blacklist?msg=' + code);
 
-        const existingIdx = blacklistUsers.findIndex(u => u.name.toLowerCase() === targetName.toLowerCase());
+    const targetName = String(req.body.targetName || '').trim();
+    const category = String(req.body.category || '');
+    const detail = String(req.body.detail || '').trim();
+    const evidence = String(req.body.evidence || '').trim();
 
-        if (existingIdx !== -1) {
-            const user = blacklistUsers[existingIdx];
-            if (!user.reasons) user.reasons = [user.reason];
-            user.reasons.push(reason);
-            user.reason = user.reasons.join(' | ');
-            user.reportCount = currentTotal;
-            user.date = new Date().toISOString().split('T')[0];
-            blacklistUsers.splice(existingIdx, 1);
-            blacklistUsers.unshift(user);
-        } else {
-            blacklistUsers.unshift({
-                name: targetName,
-                reasons: [reason],
-                reason: reason,
-                date: new Date().toISOString().split('T')[0],
-                avatar: targetName,
-                reportCount: currentTotal
-            });
-        }
+    if (!targetName || !REPORT_CATEGORIES.includes(category)) return back('invalid');
+    if (detail.length < 5 || detail.length > MAX_REPORT_DETAIL) return back('invalid');
+    if (evidence.length > MAX_REPORT_EVIDENCE) return back('invalid');
+
+    const target = store.findUserByName(targetName);
+    if (!target) return back('notfound');
+    if (target.id === me.id) return back('self');
+    if (store.hasReported(me.id, target.id)) return back('duplicate');
+    if (store.countRecentReports(me.id, 24) >= MAX_REPORTS_PER_DAY) return back('limit');
+
+    try {
+        store.createReport(me.id, target.id, category, detail, evidence);
+    } catch (err) {
+        if (err && String(err.code).startsWith('SQLITE_CONSTRAINT')) return back('duplicate');
+        console.error('送出檢舉失敗:', err);
+        return back('error');
     }
-    res.redirect('/blacklist');
+    return back('submitted');
+});
+
+// --- 管理員：審核檢舉 ---
+function requireAdmin(req, res, next) {
+    const sessUser = req.session.user;
+    if (!sessUser) return res.redirect('/login');
+    if (!isAdminEmail(sessUser.email)) return res.status(403).send('只有管理員可以使用這個頁面');
+    next();
+}
+
+const REPORT_TABS = ['pending', 'approved', 'rejected', 'revoked'];
+
+app.get('/admin/reports', requireAdmin, (req, res) => {
+    const tab = REPORT_TABS.includes(req.query.tab) ? req.query.tab : 'pending';
+    const reports = store.listReports(tab, 100).map(r => ({ ...r, time: timeAgo(r.created_at) }));
+    const counts = {};
+    REPORT_TABS.forEach(s => { counts[s] = store.countReports(s); });
+
+    res.render('admin_reports', { reports, tab, counts, threshold: store.REPORT_BAN_THRESHOLD });
+});
+
+app.post('/admin/reports/:id/:action', requireAdmin, (req, res) => {
+    const id = Number(req.params.id);
+    const action = req.params.action;
+    if (!Number.isInteger(id) || !['approve', 'reject', 'revoke'].includes(action)) {
+        return res.status(400).send('無效的操作');
+    }
+    store.reviewReport(id, req.session.user.id, action);
+    res.redirect('/admin/reports?tab=' + (action === 'revoke' ? 'approved' : 'pending'));
 });
 
 app.get('/partner', (req, res) => {
-    const currentTag = req.query.tag || '全部';
-    let filteredPosts = (currentTag !== '全部') ? allPosts.filter(p => p.hashtags.includes(currentTag)) : allPosts;
-    res.render('partner_page', { posts: filteredPosts, currentTag: currentTag });
+    const currentTag = POST_TAGS.includes(req.query.tag) ? req.query.tag : '全部';
+    const q = String(req.query.q || '').trim().slice(0, 50);
+    const posts = store
+        .listPosts({ tag: currentTag === '全部' ? '' : currentTag, q })
+        .map(toPostView);
+
+    res.render('partner_page', {
+        posts,
+        currentTag,
+        q,
+        tags: POST_TAGS,
+        maxLength: MAX_POST_LENGTH,
+        error: Object.hasOwn(POST_ERRORS, req.query.error) ? POST_ERRORS[req.query.error] : null
+    });
+});
+
+app.post('/posts', (req, res) => {
+    if (!req.session.user) return res.redirect('/login');
+    if (isBanned(req.session.user)) return res.status(403).send('您的帳號已被停權，無法發文');
+
+    const content = String(req.body.content || '').trim();
+    const rawTags = req.body.tags || [];
+    const tags = [...new Set((Array.isArray(rawTags) ? rawTags : [rawTags]).filter(t => POST_TAGS.includes(t)))].slice(0, 5);
+
+    if (!content) return res.redirect('/partner?error=empty');
+    if (content.length > MAX_POST_LENGTH) return res.redirect('/partner?error=toolong');
+
+    store.createPost(req.session.user.id, content, tags);
+    res.redirect('/partner');
 });
 
 app.get('/messages', (req, res) => {
     if (!req.session.user) return res.redirect('/login');
-    const chatList = allPosts.map(post => ({ id: post.id, name: post.author, lastMsg: post.lastMsg, time: post.time, avatar: post.author }));
-    res.render('messages', { chatList: chatList });
+    const me = req.session.user.id;
+
+    const chatList = store.listConversations(me).map(c => ({
+        id: c.partner_id,
+        name: c.partner_name,
+        avatar: c.partner_name,
+        lastMsg: (c.last_sender_id === me ? '你：' : '') + c.last_text,
+        time: timeAgo(c.last_at),
+        unread: c.unread
+    }));
+    res.render('messages', { chatList });
 });
 
+// 聊天室：:id 是對方的使用者 ID
 app.get('/chat/:id', (req, res) => {
     if (!req.session.user) return res.redirect('/login');
-    const post = allPosts.find(p => p.id === req.params.id);
-    const chatTarget = post ? { name: post.author, avatar: post.author } : { name: "測試舞者", avatar: "avatar_seed_123" };
-    res.render('chat', { chatTarget }); 
+    const me = req.session.user.id;
+
+    const targetId = Number(req.params.id);
+    const target = Number.isInteger(targetId) ? store.findUserById(targetId) : null;
+    if (!target) return res.status(404).send('找不到這位使用者');
+    if (target.id === me) return res.redirect('/messages');
+
+    // 開啟聊天室視為已讀，導覽列的未讀數也要同步
+    store.markConversationRead(me, target.id);
+    res.locals.unreadCount = store.countUnread(me);
+    res.locals.hasNewMsg = res.locals.unreadCount > 0;
+
+    const messages = store.getConversation(me, target.id).map(m => ({
+        id: m.id,
+        senderId: m.sender_id,
+        text: m.text,
+        time: formatClock(m.created_at)
+    }));
+
+    res.render('chat', {
+        chatTarget: { id: target.id, name: target.name, avatar: target.name },
+        messages,
+        currentUserId: me,
+        maxLength: MAX_MESSAGE_LENGTH
+    });
 });
 
+// 舊連結相容：沒指定對象時回到訊息列表
 app.get('/chat', (req, res) => {
-    if (!req.session.user) return res.redirect('/login');
-    const chatTarget = { name: allPosts[0].author, avatar: allPosts[0].author };
-    res.render('chat', { chatTarget });
+    res.redirect(req.session.user ? '/messages' : '/login');
 });
 
 app.get('/api/current-location', (req, res) => {
@@ -356,18 +510,21 @@ app.get('/profile/:username', (req, res) => {
         return res.redirect('/login');
     }
 
-    const targetName = req.params.username;
-    const reports = userReportsCounter[targetName] || 0;
-    
+    const target = store.findUserByName(req.params.username);
+    if (!target) return res.status(404).send('找不到這位舞者');
+
+    // 只挑要顯示的欄位，絕對不要把整列使用者資料（含密碼雜湊）傳進模板
     const profileData = {
-        name: targetName,
-        avatar: targetName,
-        danceType: targetName === "阿強" ? "Breaking / Popping" : "K-Pop / HipHop",
-        intro: "嗨！我是 " + targetName + "。希望能找到志同道合的舞伴一起進步，歡迎私訊我約練喔！",
-        reportCount: reports
+        id: target.id,
+        name: target.name,
+        avatar: target.name,
+        danceType: '舞者',
+        intro: "嗨！我是 " + target.name + "。希望能找到志同道合的舞伴一起進步，歡迎私訊我約練喔！",
+        reportCount: getReportCount(target.name),
+        postCount: store.countPostsByUser(target.id)
     };
 
-    const reviews = partnerReviews[targetName] || [];
+    const reviews = partnerReviews[target.name] || [];
 
     res.render('profile', {
         profile: profileData,
@@ -505,5 +662,72 @@ app.post('/users/:id/rate', (req, res) => {
     res.redirect('back');
 });
 
+// --- 即時私訊（Socket.io）---
+const server = http.createServer(app);
+const io = new Server(server);
+
+// Socket 與網頁共用同一份 session；身分一律以 session 為準，不信任前端傳來的使用者 ID
+io.engine.use(sessionMiddleware);
+
+io.use((socket, next) => {
+    const sessUser = socket.request.session && socket.request.session.user;
+    if (!sessUser || !Number.isInteger(sessUser.id)) return next(new Error('unauthorized'));
+    if (isBanned(sessUser)) return next(new Error('banned'));
+    socket.data.userId = sessUser.id;
+    next();
+});
+
+io.on('connection', (socket) => {
+    const me = socket.data.userId;
+    // 每位使用者一個個人房間：同一帳號開多個分頁都收得到
+    socket.join(`user:${me}`);
+
+    socket.on('send_message', (payload, ack) => {
+        const reply = typeof ack === 'function' ? ack : () => {};
+        try {
+            const toId = Number(payload && payload.to);
+            const text = String((payload && payload.text) || '').trim();
+
+            if (!Number.isInteger(toId) || toId === me || !store.findUserById(toId)) {
+                return reply({ ok: false, error: '無法傳送給這位使用者' });
+            }
+            if (!text) return reply({ ok: false, error: '訊息不能是空白' });
+            if (text.length > MAX_MESSAGE_LENGTH) {
+                return reply({ ok: false, error: `訊息最多 ${MAX_MESSAGE_LENGTH} 個字` });
+            }
+
+            const msg = store.createMessage(me, toId, text);
+            const out = {
+                id: msg.id,
+                senderId: me,
+                receiverId: toId,
+                text: msg.text,
+                time: formatClock(msg.created_at)
+            };
+
+            io.to(`user:${toId}`).emit('receive_message', out);
+            socket.to(`user:${me}`).emit('message_sent', out); // 同帳號的其他分頁同步顯示
+            reply({ ok: true, message: out });
+        } catch (err) {
+            console.error('傳送訊息失敗:', err);
+            reply({ ok: false, error: '傳送失敗，請稍後再試' });
+        }
+    });
+
+    // 對方正開著聊天室時，收到訊息即標記為已讀
+    socket.on('mark_read', (payload) => {
+        const fromId = Number(payload && payload.from);
+        if (Number.isInteger(fromId)) store.markConversationRead(me, fromId);
+    });
+});
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`DanceHub 伺服器已啟動：http://localhost:${PORT}`));
+server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.error(`埠 ${PORT} 已被占用，請先關閉舊的伺服器（例如 Stop-Process -Name node -Force）再重試。`);
+    } else {
+        console.error('伺服器錯誤:', err);
+    }
+    process.exit(1);
+});
+server.listen(PORT, () => console.log(`DanceHub 伺服器已啟動：http://localhost:${PORT}`));

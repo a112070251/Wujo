@@ -346,9 +346,15 @@
                         <a href="/partner" class="btn-view-all">查看全部</a>
                     </div>
                     
+                    <% if (!featuredPost) { %>
+                    <a href="/partner" class="post-card" style="text-align: center; color: #777777; font-size: 14px; line-height: 1.8;">
+                        📭 目前還沒有人發佈貼文<br>
+                        <span style="color: #823A00; font-weight: 700;">去發佈第一則徵舞伴貼文 →</span>
+                    </a>
+                    <% } else { %>
                     <a href="/partner" class="post-card">
                         <div class="post-author-box">
-                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= featuredPost.author %>" class="author-avatar" alt="作者頭像">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= encodeURIComponent(featuredPost.author) %>" class="author-avatar" alt="作者頭像">
                             <div>
                                 <p class="author-name"><%= featuredPost.author %></p>
                                 <p class="post-time"><%= featuredPost.time %></p>
@@ -361,6 +367,7 @@
                             <% }) %>
                         </div>
                     </a>
+                    <% } %>
                 </section>
 
                 <!-- 右側：推薦場地區塊 -->
@@ -376,7 +383,7 @@
                         </div>
                         <div class="venue-info">
                             <h4 class="venue-name"><%= featuredVenue.name %></h4>
-                            <p class="venue-location">🔍 <%= featuredVenue.location %></p>
+                            <p class="venue-location">🔍 <%= featuredVenue.dist %></p>
                             <div class="venue-price">
                                 $<%= featuredVenue.price %> <span style="font-size: 11px; font-weight: 500; color: #777;">/ hr</span>
                             </div>
