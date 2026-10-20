@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <%- include('section/head') %>
+    <title>通知 - Wu Jo</title>
+    <style>
+        .notif-list { display: flex; flex-direction: column; gap: 10px; }
+        .notif-item {
+            display: flex; gap: 12px; align-items: flex-start;
+            background: #FFFFFF; border: 1px solid #EFEFEF; border-radius: 16px; padding: 14px 16px;
+            text-decoration: none; color: #333333;
+        }
+        .notif-item.unread { background: #FFF8F0; border-color: #F0D9C0; }
+        .notif-icon { font-size: 20px; line-height: 1.2; }
+        .notif-text { font-size: 14px; line-height: 1.5; font-weight: 500; }
+        .notif-item.unread .notif-text { font-weight: 800; }
+        .notif-time { font-size: 11px; color: #999999; margin-top: 4px; }
+        .notif-empty { text-align: center; padding: 40px 20px; color: #888888; font-size: 14px; background: #FFFFFF; border-radius: 20px; border: 1px solid #EFEFEF; }
+    </style>
+</head>
+<body>
+
+    <%- include('section/nav') %>
+
+    <main class="main-content" style="padding-top: 20px; padding-bottom: 90px;">
+        <div class="container">
+            <h1 style="font-size: 22px; font-weight: 900; color: #222222; margin-bottom: 16px;">通知</h1>
+
+            <div class="notif-list">
+                <% if (notifications.length > 0) { %>
+                    <% notifications.forEach(function(n) { %>
+                        <a href="<%= n.link || '/me' %>" class="notif-item <%= n.unread ? 'unread' : '' %>">
+                            <span class="notif-icon"><%= n.icon %></span>
+                            <span>
+                                <span class="notif-text"><%= n.text %></span>
+                                <span class="notif-time" style="display:block;"><%= n.time %></span>
+                            </span>
+                        </a>
+                    <% }); %>
+                <% } else { %>
+                    <div class="notif-empty">🔔 目前沒有通知<br>有人評價你、檢舉處理有結果時，會出現在這裡。</div>
+                <% } %>
+            </div>
+        </div>
+    </main>
+
+</body>
+</html>

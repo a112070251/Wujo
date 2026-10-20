@@ -179,6 +179,7 @@ app.use((req, res, next) => {
     res.locals.isAdmin = !!sessUser && isAdminEmail(sessUser.email);
     res.locals.unreadCount = (sessUser && Number.isInteger(sessUser.id)) ? store.countUnread(sessUser.id) : 0;
     res.locals.hasNewMsg = res.locals.unreadCount > 0;
+    res.locals.notifCount = (sessUser && Number.isInteger(sessUser.id)) ? store.countUnreadNotifications(sessUser.id) : 0;
     next();
 });
 
@@ -456,8 +457,38 @@ app.post('/admin/reports/:id/:action', requireAdmin, (req, res) => {
     if (!Number.isInteger(id) || !['approve', 'reject', 'revoke'].includes(action)) {
         return res.status(400).send('無效的操作');
     }
-    store.reviewReport(id, req.session.user.id, action);
+    const report = store.getReport(id);
+    const changed = store.reviewReport(id, req.session.user.id, action);
+
+    if (changed && report && action !== 'revoke') {
+        // 只通知檢舉人處理結果；被檢舉者只會收到次數警告，不會知道是誰檢舉的
+        store.notify(report.reporter_id, 'report',
+            `你對 ${report.target_name} 的檢舉已${action === 'approve' ? '通過' : '被駁回'}`, '/blacklist');
+        if (action === 'approve') {
+            const approved = store.countApprovedReports(report.target_id);
+            if (approved === store.REPORT_BAN_THRESHOLD - 1) {
+                store.notify(report.target_id, 'warning',
+                    `警告：你已被檢舉 ${approved} 次，再被檢舉 1 次帳號就會被停權`, '/me');
+            }
+        }
+    }
     res.redirect('/admin/reports?tab=' + (action === 'revoke' ? 'approved' : 'pending'));
+});
+
+app.get('/notifications', (req, res) => {
+    const me = req.session.user;
+    if (!me) return res.redirect('/login');
+
+    const notifications = store.listNotifications(me.id).map(n => ({
+        ...n,
+        unread: !n.read_at,
+        time: timeAgo(n.created_at),
+        icon: ({ review: '⭐', report: '🛡️', warning: '⚠️' })[n.type] || '🔔'
+    }));
+    // 先取出「是否未讀」再標為已讀，導覽列的紅點也一併歸零
+    store.markNotificationsRead(me.id);
+    res.locals.notifCount = 0;
+    res.render('notifications', { notifications });
 });
 
 app.get('/partner', (req, res) => {
@@ -829,6 +860,7 @@ app.post('/submit-photo-review', (req, res) => {
     if (!reviewLimiter.hit('photo|' + me.id)) return res.status(429).send('送出太頻繁，請稍後再試');
 
     store.savePhotographerReview(me.id, pg.id, Number(rating), selectedTags, comment);
+    store.notify(pg.id, 'review', `${me.name} 給了你 ${rating} 星的攝影師評價`, `/review/photographer?target=${encodeURIComponent(pg.name)}`);
     res.redirect(back + '&msg=saved');
 });
 
@@ -850,6 +882,7 @@ app.post('/submit-review', (req, res) => {
 
     // 同一位使用者只保留你對他的最新一則評價
     store.saveReview(me.id, target.id, Number(rating), comment);
+    store.notify(target.id, 'review', `${me.name} 給了你 ${rating} 星的夥伴評價`, `/profile/${encodeURIComponent(target.name)}`);
     res.redirect('/profile/' + encodeURIComponent(target.name));
 });
 

@@ -125,6 +125,7 @@
             <% if (locals.isAdmin) { %>
                 <a href="/admin/reports" class="btn-logout-top">管理</a>
             <% } %>
+            <a href="/notifications" class="btn-logout-top" aria-label="通知">🔔<% if (locals.notifCount > 0) { %> <%= notifCount > 99 ? '99+' : notifCount %><% } %></a>
             <a href="/logout" class="btn-logout-top">登出</a>
         <% } else { %>
             <a href="/login" class="btn-login-top">登入</a>
