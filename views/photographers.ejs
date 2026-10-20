@@ -42,7 +42,7 @@
                                 
                                 <div style="flex: 1;">
                                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                                        <h3 style="font-size: 17px; font-weight: 900; color: #222; margin: 0;"><%= photographer.name %></h3>
+                                        <h3 style="font-size: 17px; font-weight: 900; margin: 0;"><a href="/photographers/<%= photographer.id %>" style="color: #222; text-decoration: none;"><%= photographer.name %></a></h3>
                                         <span style="font-size: 11px; background: #FFF3E0; color: #E65100; padding: 2px 8px; border-radius: 6px; font-weight: bold;">
                                             📍 <%= photographer.location %>
                                         </span>
@@ -64,12 +64,15 @@
                                 </div>
                             </div>
 
-                            <div style="background: #FAFAFA; border-top: 1px solid #F0F0F0; padding: 12px 16px; display: flex; justify-content: flex-end; gap: 10px;">
-                                <a href="/review/photographer?target=<%= encodeURIComponent(photographer.name) %>" style="font-size: 12px; color: #666; text-decoration: none; padding: 6px 12px; border: 1px solid #DDD; border-radius: 10px; font-weight: bold;">
-                                    ⭐ 評價與作品
+                            <div style="background: #FAFAFA; border-top: 1px solid #F0F0F0; padding: 12px 16px; display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
+                                <a href="/photographers/<%= photographer.id %>#portfolio" style="font-size: 12px; color: #666; text-decoration: none; padding: 6px 12px; border: 1px solid #DDD; border-radius: 10px; font-weight: bold;">
+                                    🎞️ 作品與評價
                                 </a>
-                                <a href="/chat/<%= photographer.id %>" style="font-size: 12px; color: white; background: #823A00; text-decoration: none; padding: 6px 16px; border-radius: 10px; font-weight: bold; display: flex; align-items: center; gap: 4px;">
-                                    💬 私訊洽詢
+                                <a href="/chat/<%= photographer.id %>" style="font-size: 12px; color: #823A00; text-decoration: none; padding: 6px 12px; border: 1px solid #823A00; border-radius: 10px; font-weight: bold;">
+                                    💬 私訊
+                                </a>
+                                <a href="/photographers/<%= photographer.id %>#book" style="font-size: 12px; color: white; background: #823A00; text-decoration: none; padding: 6px 16px; border-radius: 10px; font-weight: bold;">
+                                    📅 預約拍攝
                                 </a>
                             </div>
 

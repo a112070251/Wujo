@@ -878,9 +878,18 @@ app.get('/review', (req, res) => {
     res.render('review', { targetUser });
 });
 
+// 舊網址（/review/photographer?target=名稱）導向新的攝影師頁面
 app.get('/review/photographer', (req, res) => {
     const pg = store.getActivePhotographerByName(String(req.query.target || '').trim());
     if (!pg) return res.redirect('/photographers');
+    const msg = Object.hasOwn(BOOKING_MESSAGES, req.query.msg) || req.query.msg === 'saved' ? `?msg=${req.query.msg}` : '';
+    res.redirect(`/photographers/${pg.id}${msg}`);
+});
+
+app.get('/photographers/:id', (req, res) => {
+    const id = /^\d+$/.test(req.params.id) ? Number(req.params.id) : NaN;
+    const pg = Number.isInteger(id) ? store.getPhotographerByUserId(id) : null;
+    if (!pg || pg.active !== 1) return res.redirect('/photographers');
 
     const me = req.session.user;
     const targetPhotographer = {
@@ -888,6 +897,8 @@ app.get('/review/photographer', (req, res) => {
         name: pg.name,
         avatar: pg.name,
         style: pg.style,
+        location: pg.location,
+        bio: pg.bio,
         price: pg.price,
         rating: pg.avg_rating,
         reviewCount: pg.review_count
@@ -899,17 +910,19 @@ app.get('/review/photographer', (req, res) => {
         comment: r.comment,
         date: String(r.created_at).slice(0, 10)
     }));
+    const today = bookingRules.taipeiNow().date;
 
-    res.render('review_photographer', {
+    res.render('photographer_detail', {
         targetPhotographer,
         photoReviews,
         portfolio: store.listPortfolio(pg.id),
+        isSelf: !!me && me.id === pg.id,
         canReview: !!me && me.id !== pg.id,
         notice: req.query.msg === 'saved'
             ? { type: 'success', text: '評價已送出，謝謝你的回饋！' }
             : (Object.hasOwn(BOOKING_MESSAGES, req.query.msg) ? BOOKING_MESSAGES[req.query.msg] : null),
-        minDate: bookingRules.taipeiNow().date,
-        maxDate: bookingRules.addDays(bookingRules.taipeiNow().date, bookingRules.MAX_DAYS_AHEAD),
+        minDate: today,
+        maxDate: bookingRules.addDays(today, bookingRules.MAX_DAYS_AHEAD),
         openHour: bookingRules.OPEN_HOUR,
         closeHour: bookingRules.CLOSE_HOUR,
         maxDuration: bookingRules.MAX_DURATION,
@@ -930,7 +943,7 @@ app.post('/photographers/:id/request', (req, res) => {
     const startHour = /^\d+$/.test(String(req.body.startHour)) ? Number(req.body.startHour) : NaN;
     const duration = /^\d+$/.test(String(req.body.duration)) ? Number(req.body.duration) : NaN;
     const note = String(req.body.note || '').trim();
-    const back = (code) => res.redirect(`/review/photographer?target=${encodeURIComponent(row.name)}&msg=${code}`);
+    const back = (code) => res.redirect(`/photographers/${row.id}?msg=${code}#book`);
 
     const check = bookingRules.validateBooking({ date, startHour, duration });
     if (!check.ok) return back(check.code);
@@ -1006,13 +1019,13 @@ app.post('/submit-photo-review', (req, res) => {
     const selectedTags = [...new Set((Array.isArray(rawTags) ? rawTags : rawTags ? [rawTags] : [])
         .filter(tag => PHOTO_REVIEW_TAGS.includes(tag)))];
 
-    const back = `/review/photographer?target=${encodeURIComponent(pg.name)}`;
+    const back = `/photographers/${pg.id}`;
     if (!/^[1-5]$/.test(rating) || comment.length < 1 || comment.length > MAX_REVIEW_COMMENT) return res.redirect(back);
     if (!reviewLimiter.hit('photo|' + me.id)) return res.status(429).send('送出太頻繁，請稍後再試');
 
     store.savePhotographerReview(me.id, pg.id, Number(rating), selectedTags, comment);
-    store.notify(pg.id, 'review', `${me.name} 給了你 ${rating} 星的攝影師評價`, `/review/photographer?target=${encodeURIComponent(pg.name)}`);
-    res.redirect(back + '&msg=saved');
+    store.notify(pg.id, 'review', `${me.name} 給了你 ${rating} 星的攝影師評價`, `/photographers/${pg.id}#reviews`);
+    res.redirect(back + '?msg=saved#reviews');
 });
 
 app.get('/share', (req, res) => res.render('share'));
