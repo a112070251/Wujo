@@ -125,6 +125,16 @@ db.exec(`
     );
 
     CREATE INDEX IF NOT EXISTS idx_photo_reviews_target ON photographer_reviews(photographer_id, id);
+
+    -- 攝影師作品集：只存外部連結（YouTube、Instagram、雲端相簿等）
+    CREATE TABLE IF NOT EXISTS portfolio_items (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        title      TEXT NOT NULL,
+        url        TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        UNIQUE (user_id, url)
+    );
 `);
 
 const stmts = {
@@ -288,6 +298,13 @@ const photographerStmts = {
         WHERE r.photographer_id = ? ORDER BY r.id DESC LIMIT 50`)
 };
 
+const portfolioStmts = {
+    insert: db.prepare('INSERT INTO portfolio_items (user_id, title, url) VALUES (?, ?, ?)'),
+    list: db.prepare('SELECT id, title, url FROM portfolio_items WHERE user_id = ? ORDER BY id DESC'),
+    count: db.prepare('SELECT COUNT(*) AS n FROM portfolio_items WHERE user_id = ?'),
+    remove: db.prepare('DELETE FROM portfolio_items WHERE id = ? AND user_id = ?')
+};
+
 const bookingStmts = {
     insert: db.prepare('INSERT INTO bookings (user_id, room_id, date, start_hour, duration, price) VALUES (?, ?, ?, ?, ?, ?)'),
     insertSlot: db.prepare('INSERT INTO booking_slots (booking_id, room_id, date, hour) VALUES (?, ?, ?, ?)'),
@@ -371,6 +388,12 @@ module.exports = {
         ...r,
         tags: r.tags ? r.tags.split(',') : []
     })),
+
+    // --- portfolio ---
+    addPortfolioItem: (userId, title, url) => portfolioStmts.insert.run(userId, title, url).lastInsertRowid,
+    listPortfolio: (userId) => portfolioStmts.list.all(userId),
+    countPortfolio: (userId) => portfolioStmts.count.get(userId).n,
+    removePortfolioItem: (id, userId) => portfolioStmts.remove.run(id, userId).changes,
 
     // --- bookings ---
     createBooking: (userId, roomId, date, startHour, duration, price) =>
