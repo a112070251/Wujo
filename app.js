@@ -8,9 +8,35 @@ const http = require('http');
 const { Server } = require('socket.io');
 const store = require('./db');
 const bookingRules = require('./bookings');
+const Limiter = require('./rateLimit');
 
 // --- 基礎設定 ---
 app.set('view engine', 'ejs');
+// Render 等平台的 HTTPS 由前面的代理處理；信任一層代理才能取得真實 IP 並設定 secure cookie
+app.set('trust proxy', 1);
+app.disable('x-powered-by');
+
+// 基本的安全標頭
+app.use((req, res, next) => {
+    res.set({
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'SAMEORIGIN',
+        'Referrer-Policy': 'strict-origin-when-cross-origin'
+    });
+    next();
+});
+
+// 擋掉從其他網站送來的表單（CSRF）：寫入類請求若帶有 Origin，必須和本站相同
+app.use((req, res, next) => {
+    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+    const headers = req.headers || {};
+    if (headers.origin) {
+        let host = null;
+        try { host = new URL(headers.origin).host; } catch (e) { /* 無效的 Origin */ }
+        if (host !== headers.host) return res.status(403).send('來源不符，請求已被拒絕');
+    }
+    next();
+});
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -27,6 +53,7 @@ const sessionMiddleware = session({
     cookie: {
         httpOnly: true,
         sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 天
     }
 });
@@ -48,14 +75,15 @@ const photoReviews = [
     { name: "舞者 阿強", rating: "4", tags: ["很會引導動作"], comment: "很會引導不習慣面對鏡頭的舞者，燈光打得非常好看。美中不足是當天教室冷氣有點弱，但攝影師專業度沒話說！", date: "2026-05-29" }
 ];
 
-const partnerReviews = {
-    '阿強': [
-        { reviewer: '小雅', rating: '5', comment: '這週二一起在 Kinetics Studio 練 Breaking 非常愉快，排舞教學很有耐心！' }
-    ],
-    '小雅': [
-        { reviewer: '阿強', rating: '4', comment: '非常有活力的夥伴，練舞時間觀念很好，基本功很紮實！' }
-    ]
-};
+// --- 防暴力破解與濫用 ---
+const loginLimiter = new Limiter(10, 15 * 60 * 1000);    // 同一 IP + 帳號 15 分鐘最多 10 次
+const registerLimiter = new Limiter(10, 60 * 60 * 1000); // 同一 IP 每小時最多註冊 10 次
+const reviewLimiter = new Limiter(20, 60 * 60 * 1000);   // 同一使用者每小時最多送出 20 則評價
+
+// --- 評價設定 ---
+const MAX_REVIEW_COMMENT = 300;
+const PHOTO_REVIEW_TAGS = ['出片極快', '運鏡很穩', '很會引導動作', '配樂切點精準'];
+const MAX_PHOTO_REVIEWS = 200;
 
 // --- 貼文與訊息的共用設定 ---
 const POST_TAGS = ['找比賽', '練基礎', '拍片', 'K-Pop', 'HipHop', '街舞', 'Breaking', 'Popping'];
@@ -191,11 +219,18 @@ app.post('/login', async (req, res) => {
 
     if (!username || !password) return fail(400, '請輸入帳號與密碼');
 
+    const limitKey = `${req.ip}|${username.toLowerCase()}`;
+    if (loginLimiter.isBlocked(limitKey)) return fail(429, '嘗試次數過多，請 15 分鐘後再試');
+
     try {
         const account = store.findUserByLogin(username);
         const passwordOk = await bcrypt.compare(password, account ? account.password_hash : DUMMY_HASH);
 
-        if (!account || !passwordOk) return fail(401, '帳號或密碼錯誤');
+        if (!account || !passwordOk) {
+            loginLimiter.hit(limitKey);
+            return fail(401, '帳號或密碼錯誤');
+        }
+        loginLimiter.reset(limitKey);
 
         const currentReports = getReportCount(account.name);
         if (currentReports >= 5) {
@@ -233,6 +268,7 @@ app.post('/register', async (req, res) => {
     const form = { name, email };
     const fail = (status, error) => res.status(status).render('register', { error, form });
 
+    if (!registerLimiter.hit(String(req.ip))) return fail(429, '註冊次數過多，請稍後再試');
     if (!agreeTerms) return fail(400, '必須同意服務條款與隱私權政策才能完成註冊');
     if (name.length < 2 || name.length > 20) return fail(400, '暱稱需為 2 到 20 個字');
     if (name.includes('@')) return fail(400, '暱稱不能包含 @');
@@ -626,7 +662,11 @@ app.get('/profile/:username', (req, res) => {
         postCount: store.countPostsByUser(target.id)
     };
 
-    const reviews = partnerReviews[target.name] || [];
+    const reviews = store.listReviews(target.id).map(r => ({
+        reviewer: r.reviewer_name,
+        rating: String(r.rating),
+        comment: r.comment || '（沒有留下文字評語）'
+    }));
 
     res.render('profile', {
         profile: profileData,
@@ -667,18 +707,17 @@ app.get('/photographers', (req, res) => {
 });
 
 app.get('/review', (req, res) => {
-    if (!req.session.user) return res.redirect('/login');
+    const me = req.session.user;
+    if (!me) return res.redirect('/login');
 
-    const targetName = req.query.target;
-    
-    if (!targetName) {
-        return res.redirect('/partner');
-    }
+    const target = store.findUserByName(String(req.query.target || '').trim());
+    if (!target) return res.redirect('/partner');
+    if (target.id === me.id) return res.redirect('/profile/' + encodeURIComponent(target.name));
 
     const targetUser = {
-        name: targetName,
-        avatar: targetName,
-        danceType: targetName === "阿強" ? "Breaking / Popping" : "K-Pop / HipHop"
+        name: target.name,
+        avatar: target.name,
+        danceType: '舞者'
     };
 
     res.render('review', { targetUser });
@@ -696,72 +735,51 @@ app.get('/review/photographer', (req, res) => {
 });
 
 app.post('/submit-photo-review', (req, res) => {
-    const { targetName, rating, tags, comment } = req.body;
-    const userName = req.session.user ? req.session.user.name : "匿名舞者";
-    
-    let selectedTags = [];
-    if (tags) {
-        selectedTags = Array.isArray(tags) ? tags : [tags];
-    }
+    const me = req.session.user;
+    if (!me) return res.redirect('/login');
+
+    const targetName = String(req.body.targetName || '').trim().slice(0, 30);
+    const rating = String(req.body.rating || '');
+    const comment = String(req.body.comment || '').trim();
+    const rawTags = req.body.tags;
+    const selectedTags = (Array.isArray(rawTags) ? rawTags : rawTags ? [rawTags] : [])
+        .filter(tag => PHOTO_REVIEW_TAGS.includes(tag));
+
+    const back = `/review/photographer?target=${encodeURIComponent(targetName)}`;
+    if (!/^[1-5]$/.test(rating) || comment.length < 1 || comment.length > MAX_REVIEW_COMMENT) return res.redirect(back);
+    if (!reviewLimiter.hit('photo|' + me.id)) return res.status(429).send('送出太頻繁，請稍後再試');
 
     photoReviews.unshift({
-        name: "舞者 " + userName,
-        rating: rating,
-        tags: selectedTags,
-        comment: comment,
+        name: '舞者 ' + me.name,
+        rating,
+        tags: [...new Set(selectedTags)],
+        comment,
         date: new Date().toISOString().split('T')[0]
     });
+    if (photoReviews.length > MAX_PHOTO_REVIEWS) photoReviews.length = MAX_PHOTO_REVIEWS;
 
-    res.redirect(`/review/photographer?target=${encodeURIComponent(targetName)}`);
+    res.redirect(back);
 });
 
 app.get('/share', (req, res) => res.render('share'));
 
 app.post('/submit-review', (req, res) => {
-    if (!req.session.user) return res.redirect('/login');
+    const me = req.session.user;
+    if (!me) return res.redirect('/login');
 
-    const { targetName, rating, comment } = req.body;
-    const reviewerName = req.session.user.name;
+    const target = store.findUserByName(String(req.body.targetName || '').trim());
+    if (!target || target.id === me.id) return res.redirect('/partner');
 
-    if (targetName) {
-        if (!partnerReviews[targetName]) {
-            partnerReviews[targetName] = [];
-        }
-
-        partnerReviews[targetName].unshift({
-            reviewer: reviewerName,
-            rating: rating || "5",
-            comment: comment || "這位夥伴很棒！"
-        });
-
-        return res.redirect(`/profile/${encodeURIComponent(targetName)}`);
+    const rating = String(req.body.rating || '');
+    const comment = String(req.body.comment || '').trim();
+    if (!/^[1-5]$/.test(rating) || comment.length > MAX_REVIEW_COMMENT) {
+        return res.redirect('/review?target=' + encodeURIComponent(target.name));
     }
+    if (!reviewLimiter.hit('partner|' + me.id)) return res.status(429).send('送出太頻繁，請稍後再試');
 
-    res.redirect('/partner');
-});
-
-// --- 純記憶體評分暫存（無 Mongoose 依賴） ---
-const userRatings = {};
-
-app.post('/users/:id/rate', (req, res) => {
-    const userId = req.params.id;
-    const { score } = req.body;
-    const numScore = Number(score);
-
-    if (!score || isNaN(numScore)) return res.status(400).send("無效的評分");
-
-    if (!userRatings[userId]) {
-        userRatings[userId] = { ratings: [], averageRating: 0, ratingCount: 0 };
-    }
-
-    const userData = userRatings[userId];
-    userData.ratings.push(numScore);
-    userData.ratingCount = userData.ratings.length;
-    
-    const totalScore = userData.ratings.reduce((sum, s) => sum + s, 0);
-    userData.averageRating = Number((totalScore / userData.ratingCount).toFixed(1));
-
-    res.redirect('back');
+    // 同一位使用者只保留你對他的最新一則評價
+    store.saveReview(me.id, target.id, Number(rating), comment);
+    res.redirect('/profile/' + encodeURIComponent(target.name));
 });
 
 // --- 即時私訊（Socket.io）---
