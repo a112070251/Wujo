@@ -47,13 +47,6 @@ const photoReviews = [
     { name: "舞者 阿強", rating: "4", tags: ["很會引導動作"], comment: "很會引導不習慣面對鏡頭的舞者，燈光打得非常好看。美中不足是當天教室冷氣有點弱，但攝影師專業度沒話說！", date: "2026-05-29" }
 ];
 
-// 用戶檢舉計數器
-const userReportsCounter = {
-    'bad': 5,
-    'Ghoster': 3,
-    '256': 1
-};
-
 const partnerReviews = {
     '阿強': [
         { reviewer: '小雅', rating: '5', comment: '這週二一起在 Kinetics Studio 練 Breaking 非常愉快，排舞教學很有耐心！' }
@@ -63,26 +56,6 @@ const partnerReviews = {
     ]
 };
 
-// 黑名單展示資料
-const blacklistUsers = [
-    { 
-        name: 'bad', 
-        reasons: ['惡意取消'], 
-        reason: '惡意取消', 
-        date: '2026-03-10', 
-        avatar: 'bad',
-        reportCount: 5
-    },
-    { 
-        name: 'Ghoster', 
-        reasons: ['放鳥次數過多'], 
-        reason: '放鳥次數過多', 
-        date: '2026-03-05', 
-        avatar: 'Ghost',
-        reportCount: 3
-    }
-];
-
 // --- 貼文與訊息的共用設定 ---
 const POST_TAGS = ['找比賽', '練基礎', '拍片', 'K-Pop', 'HipHop', '街舞', 'Breaking', 'Popping'];
 const MAX_POST_LENGTH = 200;
@@ -91,6 +64,31 @@ const POST_ERRORS = {
     empty: '貼文內容不能是空白',
     toolong: `貼文最多 ${MAX_POST_LENGTH} 個字`
 };
+
+// --- 檢舉與管理設定 ---
+const REPORT_CATEGORIES = ['惡意取消或放鳥', '言論騷擾', '冒充或詐騙', '不當內容', '其他'];
+const MAX_REPORT_DETAIL = 500;
+const MAX_REPORT_EVIDENCE = 300;
+const MAX_REPORTS_PER_DAY = 5;
+const REPORT_MESSAGES = {
+    submitted: { type: 'success', text: '檢舉已送出，管理員審核通過後才會公開。' },
+    invalid: { type: 'error', text: `請選擇檢舉類別，並填寫 5 到 ${MAX_REPORT_DETAIL} 個字的說明（佐證最多 ${MAX_REPORT_EVIDENCE} 字）。` },
+    notfound: { type: 'error', text: '找不到這位使用者，請確認用戶名稱是否正確。' },
+    self: { type: 'error', text: '不能檢舉自己。' },
+    duplicate: { type: 'error', text: '你已經檢舉過這位使用者了，請等待管理員審核。' },
+    limit: { type: 'error', text: `為避免濫用，每人 24 小時內最多送出 ${MAX_REPORTS_PER_DAY} 件檢舉。` },
+    error: { type: 'error', text: '送出失敗，請稍後再試。' }
+};
+
+// 管理員以環境變數 ADMIN_EMAILS 指定（多個信箱用逗號分隔），登入時的信箱符合即為管理員
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean);
+
+function isAdminEmail(email) {
+    return !!email && ADMIN_EMAILS.includes(String(email).toLowerCase());
+}
 
 // 資料庫存的是 UTC 時間字串（YYYY-MM-DD HH:MM:SS）
 function parseDbTime(sqlUtc) {
@@ -127,13 +125,18 @@ function toPostView(row) {
 
 // 已被停權（檢舉 5 次以上）的帳號，即使 session 還在也不能發文或傳訊
 function isBanned(user) {
-    return getReportCount(user.name) >= 5;
+    return Number.isInteger(user.id) && store.countApprovedReports(user.id) >= store.REPORT_BAN_THRESHOLD;
 }
 
 // --- 3. 全域變數中間件 ---
 app.use((req, res, next) => {
     const sessUser = req.session.user;
+    // 登入後才被停權的帳號，下一次操作就會被登出
+    if (sessUser && isBanned(sessUser)) {
+        return req.session.destroy(() => res.redirect('/login?banned=1'));
+    }
     res.locals.user = sessUser || null;
+    res.locals.isAdmin = !!sessUser && isAdminEmail(sessUser.email);
     res.locals.unreadCount = (sessUser && Number.isInteger(sessUser.id)) ? store.countUnread(sessUser.id) : 0;
     res.locals.hasNewMsg = res.locals.unreadCount > 0;
     next();
@@ -154,7 +157,7 @@ app.get('/', (req, res) => {
 app.get('/login', (req, res) => {
     if (req.session.user) return res.redirect('/me');
     res.render('login', {
-        error: null,
+        error: req.query.banned ? '您的帳號因被檢舉次數過多，已被系統停權。' : null,
         username: '',
         notice: req.query.registered ? '註冊成功，請登入' : null
     });
@@ -174,12 +177,9 @@ app.get('/terms', (req, res) => {
 // 帳號不存在時也跑一次 bcrypt，讓回應時間一致，避免被用來探測哪些帳號存在
 const DUMMY_HASH = bcrypt.hashSync('dummy-password-for-timing', 10);
 
-// 不分大小寫累計檢舉次數
+// 只計算管理員審核通過的檢舉
 function getReportCount(name) {
-    const target = String(name).toLowerCase();
-    return Object.keys(userReportsCounter)
-        .filter(k => k.toLowerCase() === target)
-        .reduce((sum, k) => sum + userReportsCounter[k], 0);
+    return store.countApprovedReportsByName(String(name));
 }
 
 app.post('/login', async (req, res) => {
@@ -209,6 +209,7 @@ app.post('/login', async (req, res) => {
             }
             req.session.user = {
                 id: account.id,
+                email: account.email,
                 name: account.name,
                 avatarSeed: account.name,
                 reports: currentReports,
@@ -262,6 +263,13 @@ app.get('/me', (req, res) => {
         return res.redirect('/login'); 
     }
     
+    // 檢舉次數以資料庫為準（只算管理員審核通過的）
+    if (Number.isInteger(req.session.user.id)) {
+        const approved = store.countApprovedReports(req.session.user.id);
+        req.session.user.reports = approved;
+        req.session.user.isWarning = approved === store.REPORT_BAN_THRESHOLD - 1;
+    }
+
     if (typeof req.session.user.isPhotographer === 'undefined') {
         req.session.user.isPhotographer = false;
         req.session.user.photoPrice = "0";
@@ -284,49 +292,88 @@ app.post('/update-photographer', (req, res) => {
 });
 
 app.get('/blacklist', (req, res) => {
-    const searchQuery = req.query.search || '';
-    let filteredList = blacklistUsers;
+    const searchQuery = String(req.query.search || '').trim().slice(0, 50);
 
-    if (searchQuery) {
-        filteredList = blacklistUsers.filter(u => 
-            u.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-            u.reason.includes(searchQuery)
-        );
-    }
-    res.render('blacklist', { blacklisted: filteredList, searchQuery: searchQuery });
+    // 公開名單只含「管理員審核通過」的檢舉，且只顯示類別與次數，不公開檢舉人與詳細內容
+    const blacklisted = store.listBlacklist({ q: searchQuery }).map(r => ({
+        name: r.name,
+        avatar: r.name,
+        reason: r.categories.join('、'),
+        reportCount: r.report_count,
+        date: String(r.last_at || '').slice(0, 10)
+    }));
+
+    const notice = Object.hasOwn(REPORT_MESSAGES, req.query.msg) ? REPORT_MESSAGES[req.query.msg] : null;
+
+    res.render('blacklist', {
+        blacklisted,
+        searchQuery,
+        categories: REPORT_CATEGORIES,
+        maxDetail: MAX_REPORT_DETAIL,
+        maxEvidence: MAX_REPORT_EVIDENCE,
+        notice
+    });
 });
 
+// 提交檢舉：送出後是「待審核」，管理員通過後才會公開並計入次數
 app.post('/submit-blacklist', (req, res) => {
-    if (!req.session.user) return res.redirect('/login');
+    const me = req.session.user;
+    if (!me) return res.redirect('/login');
 
-    const { targetName, reason } = req.body;
-    if (targetName && reason) {
-        userReportsCounter[targetName] = (userReportsCounter[targetName] || 0) + 1;
-        const currentTotal = userReportsCounter[targetName];
+    const back = (code) => res.redirect('/blacklist?msg=' + code);
 
-        const existingIdx = blacklistUsers.findIndex(u => u.name.toLowerCase() === targetName.toLowerCase());
+    const targetName = String(req.body.targetName || '').trim();
+    const category = String(req.body.category || '');
+    const detail = String(req.body.detail || '').trim();
+    const evidence = String(req.body.evidence || '').trim();
 
-        if (existingIdx !== -1) {
-            const user = blacklistUsers[existingIdx];
-            if (!user.reasons) user.reasons = [user.reason];
-            user.reasons.push(reason);
-            user.reason = user.reasons.join(' | ');
-            user.reportCount = currentTotal;
-            user.date = new Date().toISOString().split('T')[0];
-            blacklistUsers.splice(existingIdx, 1);
-            blacklistUsers.unshift(user);
-        } else {
-            blacklistUsers.unshift({
-                name: targetName,
-                reasons: [reason],
-                reason: reason,
-                date: new Date().toISOString().split('T')[0],
-                avatar: targetName,
-                reportCount: currentTotal
-            });
-        }
+    if (!targetName || !REPORT_CATEGORIES.includes(category)) return back('invalid');
+    if (detail.length < 5 || detail.length > MAX_REPORT_DETAIL) return back('invalid');
+    if (evidence.length > MAX_REPORT_EVIDENCE) return back('invalid');
+
+    const target = store.findUserByName(targetName);
+    if (!target) return back('notfound');
+    if (target.id === me.id) return back('self');
+    if (store.hasReported(me.id, target.id)) return back('duplicate');
+    if (store.countRecentReports(me.id, 24) >= MAX_REPORTS_PER_DAY) return back('limit');
+
+    try {
+        store.createReport(me.id, target.id, category, detail, evidence);
+    } catch (err) {
+        if (err && String(err.code).startsWith('SQLITE_CONSTRAINT')) return back('duplicate');
+        console.error('送出檢舉失敗:', err);
+        return back('error');
     }
-    res.redirect('/blacklist');
+    return back('submitted');
+});
+
+// --- 管理員：審核檢舉 ---
+function requireAdmin(req, res, next) {
+    const sessUser = req.session.user;
+    if (!sessUser) return res.redirect('/login');
+    if (!isAdminEmail(sessUser.email)) return res.status(403).send('只有管理員可以使用這個頁面');
+    next();
+}
+
+const REPORT_TABS = ['pending', 'approved', 'rejected', 'revoked'];
+
+app.get('/admin/reports', requireAdmin, (req, res) => {
+    const tab = REPORT_TABS.includes(req.query.tab) ? req.query.tab : 'pending';
+    const reports = store.listReports(tab, 100).map(r => ({ ...r, time: timeAgo(r.created_at) }));
+    const counts = {};
+    REPORT_TABS.forEach(s => { counts[s] = store.countReports(s); });
+
+    res.render('admin_reports', { reports, tab, counts, threshold: store.REPORT_BAN_THRESHOLD });
+});
+
+app.post('/admin/reports/:id/:action', requireAdmin, (req, res) => {
+    const id = Number(req.params.id);
+    const action = req.params.action;
+    if (!Number.isInteger(id) || !['approve', 'reject', 'revoke'].includes(action)) {
+        return res.status(400).send('無效的操作');
+    }
+    store.reviewReport(id, req.session.user.id, action);
+    res.redirect('/admin/reports?tab=' + (action === 'revoke' ? 'approved' : 'pending'));
 });
 
 app.get('/partner', (req, res) => {

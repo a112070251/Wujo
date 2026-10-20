@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <%- include('section/head') %>
+    <title>檢舉審核 - Wu Jo</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: #FAFAFA !important;
+            color: #333333 !important;
+        }
+
+        .main-content {
+            padding-top: 20px;
+            padding-bottom: 90px;
+        }
+
+        .page-title {
+            font-size: 22px;
+            font-weight: 900;
+            color: #222222;
+            letter-spacing: 0.5px;
+        }
+
+        .page-subtitle {
+            font-size: 13px;
+            color: #666666;
+            margin: 4px 0 20px 0;
+            line-height: 1.6;
+        }
+
+        /* 狀態分頁 */
+        .tab-row {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 12px;
+            margin-bottom: 8px;
+        }
+
+        .tab-chip {
+            flex: none;
+            text-decoration: none;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            white-space: nowrap;
+            background: #F0F0F0;
+            color: #555555;
+        }
+
+        .tab-chip.active {
+            background: #823A00;
+            color: #FFFFFF;
+        }
+
+        .report-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .report-card {
+            background-color: #FFFFFF;
+            border: 1px solid #EFEFEF;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .report-body {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .report-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .report-target {
+            font-size: 16px;
+            font-weight: 900;
+            color: #C62828;
+            text-decoration: none;
+        }
+
+        .badge {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 8px;
+        }
+
+        .badge-category {
+            background-color: #FFF3E0;
+            color: #E65100;
+        }
+
+        .badge-count {
+            background-color: rgba(211, 47, 47, 0.06);
+            color: #D32F2F;
+        }
+
+        .report-meta {
+            font-size: 12px;
+            color: #888888;
+        }
+
+        .report-detail {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #333333;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .report-evidence {
+            font-size: 12px;
+            color: #555555;
+            background-color: #FAFAFA;
+            border: 1px solid #F0F0F0;
+            border-radius: 12px;
+            padding: 10px 12px;
+            word-break: break-all;
+        }
+
+        .report-evidence a {
+            color: #823A00;
+            font-weight: 700;
+        }
+
+        .report-actions {
+            background: #FAFAFA;
+            border-top: 1px solid #F0F0F0;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-act {
+            border: none;
+            border-radius: 10px;
+            padding: 7px 18px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .btn-approve { background-color: #823A00; color: #FFFFFF; }
+        .btn-reject { background-color: #FFFFFF; color: #666666; border: 1px solid #DDDDDD; }
+        .btn-revoke { background-color: #FFFFFF; color: #C62828; border: 1px solid #FFCDD2; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #777777;
+            font-size: 14px;
+            background: #FFFFFF;
+            border-radius: 20px;
+            border: 1px solid #EFEFEF;
+        }
+    </style>
+</head>
+<body>
+
+    <%- include('section/nav') %>
+
+    <%
+        const tabNames = { pending: '待審核', approved: '已通過', rejected: '已駁回', revoked: '已撤銷' };
+        const isSafeLink = function(text) { return /^https?:\/\//i.test(text); };
+    %>
+
+    <main class="main-content">
+        <div class="container">
+
+            <h1 class="page-title">檢舉審核</h1>
+            <p class="page-subtitle">通過後才會公開並計入次數，已通過的檢舉累積 <%= threshold %> 次，該帳號就會被停權。檢舉人與說明內容只有管理員看得到。</p>
+
+            <div class="tab-row">
+                <% Object.keys(tabNames).forEach(function(key) { %>
+                    <a href="/admin/reports?tab=<%= key %>" class="tab-chip <%= tab === key ? 'active' : '' %>"><%= tabNames[key] %>（<%= counts[key] %>）</a>
+                <% }); %>
+            </div>
+
+            <div class="report-list">
+                <% if (reports.length > 0) { %>
+                    <% reports.forEach(function(r) { %>
+                        <div class="report-card">
+                            <div class="report-body">
+                                <div class="report-head">
+                                    <a href="/profile/<%= encodeURIComponent(r.target_name) %>" class="report-target">#<%= r.id %> · <%= r.target_name %></a>
+                                    <span>
+                                        <span class="badge badge-category"><%= r.category %></span>
+                                        <span class="badge badge-count">已通過 <%= r.target_approved %> / <%= threshold %> 次</span>
+                                    </span>
+                                </div>
+
+                                <p class="report-meta">檢舉人：<%= r.reporter_name %> · <%= r.time %></p>
+                                <p class="report-detail"><%= r.detail %></p>
+
+                                <% if (r.evidence) { %>
+                                    <div class="report-evidence">
+                                        佐證：
+                                        <% if (isSafeLink(r.evidence)) { %>
+                                            <a href="<%= r.evidence %>" target="_blank" rel="noopener noreferrer nofollow"><%= r.evidence %></a>
+                                        <% } else { %>
+                                            <%= r.evidence %>
+                                        <% } %>
+                                    </div>
+                                <% } %>
+                            </div>
+
+                            <div class="report-actions">
+                                <% if (r.status === 'pending') { %>
+                                    <form action="/admin/reports/<%= r.id %>/reject" method="POST">
+                                        <button type="submit" class="btn-act btn-reject">駁回</button>
+                                    </form>
+                                    <form action="/admin/reports/<%= r.id %>/approve" method="POST">
+                                        <button type="submit" class="btn-act btn-approve">通過</button>
+                                    </form>
+                                <% } else if (r.status === 'approved') { %>
+                                    <form action="/admin/reports/<%= r.id %>/revoke" method="POST" onsubmit="return confirm('確定要撤銷這筆已通過的檢舉嗎？該帳號的檢舉次數會減少 1。');">
+                                        <button type="submit" class="btn-act btn-revoke">撤銷</button>
+                                    </form>
+                                <% } else { %>
+                                    <span class="report-meta">狀態：<%= tabNames[r.status] %></span>
+                                <% } %>
+                            </div>
+                        </div>
+                    <% }); %>
+                <% } else { %>
+                    <div class="empty-state">目前沒有「<%= tabNames[tab] %>」的檢舉 ✨</div>
+                <% } %>
+            </div>
+
+        </div>
+    </main>
+
+</body>
+</html>

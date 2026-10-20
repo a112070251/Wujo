@@ -122,6 +122,9 @@
     
     <div>
         <% if (locals.user && user) { %>
+            <% if (locals.isAdmin) { %>
+                <a href="/admin/reports" class="btn-logout-top">管理</a>
+            <% } %>
             <a href="/logout" class="btn-logout-top">登出</a>
         <% } else { %>
             <a href="/login" class="btn-login-top">登入</a>
