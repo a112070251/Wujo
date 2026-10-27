@@ -1118,4 +1118,18 @@ server.on('error', (err) => {
     }
     process.exit(1);
 });
+// 展覽用示範資料（需設定 SEED_DEMO=1 與 DEMO_PASSWORD；資料庫已有使用者時不會動）
+if (process.env.SEED_DEMO === '1') {
+    const demoPassword = String(process.env.DEMO_PASSWORD || '');
+    if (demoPassword.length < 6) {
+        console.warn('SEED_DEMO=1 但 DEMO_PASSWORD 未設定或少於 6 個字元，略過示範資料');
+    } else {
+        try {
+            if (require('./demoSeed').seedDemo(store, bcrypt, demoPassword, ADMIN_EMAILS[0] || '')) console.log('已建立示範資料');
+        } catch (err) {
+            console.error('建立示範資料失敗:', err);
+        }
+    }
+}
+
 server.listen(PORT, () => console.log(`DanceHub 伺服器已啟動：http://localhost:${PORT}`));
