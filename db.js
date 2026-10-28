@@ -308,6 +308,7 @@ const createPostTx = db.transaction((authorId, content, tags) => {
 const reviewStmts = {
     upsert: db.prepare(`INSERT INTO partner_reviews (reviewer_id, target_id, rating, comment) VALUES (?, ?, ?, ?)
         ON CONFLICT(reviewer_id, target_id) DO UPDATE SET rating = excluded.rating, comment = excluded.comment, created_at = datetime('now')`),
+    stats: db.prepare('SELECT ROUND(AVG(rating), 1) AS avg, COUNT(*) AS n FROM partner_reviews WHERE target_id = ?'),
     list: db.prepare(`SELECT r.id, r.rating, r.comment, r.created_at, u.name AS reviewer_name
         FROM partner_reviews r JOIN users u ON u.id = r.reviewer_id
         WHERE r.target_id = ? ORDER BY r.id DESC LIMIT 50`)
@@ -389,6 +390,7 @@ const bookingStmts = {
     insert: db.prepare('INSERT INTO bookings (user_id, room_id, date, start_hour, duration, price) VALUES (?, ?, ?, ?, ?, ?)'),
     insertSlot: db.prepare('INSERT INTO booking_slots (booking_id, room_id, date, hour) VALUES (?, ?, ?, ?)'),
     byId: db.prepare('SELECT * FROM bookings WHERE id = ?'),
+    totalConfirmed: db.prepare("SELECT COUNT(*) AS n FROM bookings WHERE user_id = ? AND status = 'confirmed'"),
     bookedHours: db.prepare('SELECT hour FROM booking_slots WHERE room_id = ? AND date = ? ORDER BY hour'),
     activeCount: db.prepare(`SELECT COUNT(*) AS n FROM bookings
         WHERE user_id = ? AND status = 'confirmed'
@@ -454,6 +456,7 @@ module.exports = {
     // --- partner reviews ---
     saveReview: (reviewerId, targetId, rating, comment) => reviewStmts.upsert.run(reviewerId, targetId, rating, comment).changes,
     listReviews: (targetId) => reviewStmts.list.all(targetId),
+    partnerReviewStats: (targetId) => reviewStmts.stats.get(targetId),
 
     // --- photographers ---
     savePhotographer: (userId, { price, style, location, bio }) => photographerStmts.upsert.run(userId, price, style, location, bio, 1).changes,
@@ -504,6 +507,7 @@ module.exports = {
     createBooking: (userId, roomId, date, startHour, duration, price) =>
         createBookingTx(userId, roomId, date, startHour, duration, price),
     getBooking: (id) => bookingStmts.byId.get(id),
+    countBookingsByUser: (userId) => bookingStmts.totalConfirmed.get(userId).n,
     listBookedHours: (roomId, date) => bookingStmts.bookedHours.all(roomId, date).map(r => r.hour),
     countActiveBookings: (userId, today, hour) => bookingStmts.activeCount.get(userId, today, today, hour).n,
     listUpcomingBookings: (userId, today) => bookingStmts.upcoming.all(userId, today),

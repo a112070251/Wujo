@@ -80,10 +80,32 @@
 
         .promo-img {
             width: 100%;
-            height: auto;
-            max-height: 280px;
+            height: 240px;
             object-fit: cover;
             display: block;
+        }
+
+        /* 沒有照片的投影片：品牌色漸層 + 大圖示 */
+        .promo-art {
+            width: 100%;
+            height: 240px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #CC8C53 0%, #823A00 100%);
+            color: rgba(255, 255, 255, 0.92);
+            font-size: 84px;
+        }
+
+        .promo-art i { display: block; line-height: 1; }
+
+        .promo-carousel { margin: 0 auto 48px auto; }
+
+        .carousel-slide.promo-banner {
+            flex: 0 0 100%;
+            scroll-snap-align: start;
+            margin: 0;
+            width: auto;
         }
 
         .promo-content {
@@ -375,20 +397,35 @@
                 <p class="hero-subtitle">你你你你要跳舞嗎？</p>
             </header>
 
-            <!-- 合作教室精選 Banner (修正原先 HTML 類名不對應的問題) -->
-            <a href="/venues" class="promo-banner">
-                <img src="/img/banner.jpg" class="promo-img" alt="合作教室精選 Banner">
-                <div class="promo-content">
-                    <div class="tag-row">
-                        <span class="badge-sponsored">Sponsored</span>
-                        <span class="venue-partner-text">合作教室：Studio</span>
-                    </div>
-                    <h2 class="promo-headline">
-                        憑 App 簽到頁面，<span class="highlight-price">場租享 9 折優惠</span>
-                    </h2>
-                    <p class="promo-footer-text">點擊查看詳情與位置</p>
+            <!-- 首頁主視覺：幻燈片輪播（第一張是合作教室優惠，其餘介紹網站功能） -->
+            <div class="carousel promo-carousel" data-autoplay="5000" role="region" aria-roledescription="carousel" aria-label="精選消息">
+                <div class="carousel-track">
+                    <% promoSlides.forEach(function(s, i) { %>
+                        <a href="<%= s.href %>" class="promo-banner carousel-slide" aria-label="第 <%= i + 1 %> 張，共 <%= promoSlides.length %> 張：<%= s.title %>">
+                            <% if (s.image) { %>
+                                <img src="<%= s.image %>" class="promo-img" alt="<%= s.imageAlt || s.title %>" <%= i > 0 ? 'loading="lazy"' : '' %>>
+                            <% } else { %>
+                                <div class="promo-art" aria-hidden="true"><i class="fi <%= s.icon %>"></i></div>
+                            <% } %>
+                            <div class="promo-content">
+                                <div class="tag-row">
+                                    <span class="badge-sponsored"><%= s.tag %></span>
+                                    <% if (s.partner) { %><span class="venue-partner-text"><%= s.partner %></span><% } %>
+                                </div>
+                                <h2 class="promo-headline">
+                                    <%= s.title %><% if (s.highlight) { %><span class="highlight-price"><%= s.highlight %></span><% } %>
+                                </h2>
+                                <p class="promo-footer-text"><%= s.footer %></p>
+                            </div>
+                        </a>
+                    <% }); %>
                 </div>
-            </a>
+                <div class="carousel-dots">
+                    <% promoSlides.forEach(function(s, i) { %>
+                        <button type="button" class="carousel-dot <%= i === 0 ? 'active' : '' %>" data-index="<%= i %>" aria-label="看第 <%= i + 1 %> 張：<%= s.title %>"></button>
+                    <% }); %>
+                </div>
+            </div>
 
             <!-- 網格佈局區：在寬螢幕自動切換左右雙欄對稱結構 -->
             <div class="home-grid">
@@ -431,8 +468,8 @@
                         <a href="/venues" class="btn-view-all">尋找更多</a>
                     </div>
                     
-                    <div class="carousel" id="venueCarousel" role="region" aria-roledescription="carousel" aria-label="推薦場地">
-                        <div class="carousel-track" id="venueTrack">
+                    <div class="carousel" data-autoplay="0" role="region" aria-roledescription="carousel" aria-label="推薦場地">
+                        <div class="carousel-track">
                             <% venues.forEach(function(v, i) { %>
                                 <a href="/venues/<%= v.id %>" class="venue-card carousel-slide" aria-label="第 <%= i + 1 %> 張，共 <%= venues.length %> 張：<%= v.name %>">
                                     <div class="venue-img-wrapper">
@@ -466,42 +503,45 @@
     </main>
 
     <script>
-        // 推薦場地輪播：每 4 秒自動換下一張；手指滑動、點圓點都可以；滑鼠移入或碰觸時暫停
+        // 幻燈片輪播（首頁主視覺與推薦場地共用）：
+        // 手指滑動、點圓點都可以；data-autoplay 設為毫秒就會自動換頁（0 為不自動）；滑鼠移入或碰觸時暫停
         (function () {
-            var track = document.getElementById('venueTrack');
-            if (!track) return;
-            var dots = Array.prototype.slice.call(document.querySelectorAll('.carousel-dot'));
-            var slides = track.children.length;
-            if (slides < 2) return;
+            var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-            var current = 0, timer = null, paused = false;
+            Array.prototype.forEach.call(document.querySelectorAll('.carousel'), function (root) {
+                var track = root.querySelector('.carousel-track');
+                var dots = Array.prototype.slice.call(root.querySelectorAll('.carousel-dot'));
+                var slides = track ? track.children.length : 0;
+                if (slides < 2) return;
 
-            function show(i) {
-                current = (i + slides) % slides;
-                track.scrollTo({ left: current * track.clientWidth, behavior: 'smooth' });
-            }
+                var interval = Number(root.getAttribute('data-autoplay')) || 0;
+                var current = 0, timer = null, paused = false;
 
-            function sync() {
-                var i = Math.round(track.scrollLeft / track.clientWidth);
-                if (i < 0 || i >= slides) return;
-                current = i;
-                dots.forEach(function (d, k) { d.classList.toggle('active', k === i); });
-            }
+                function show(i) {
+                    current = (i + slides) % slides;
+                    track.scrollTo({ left: current * track.clientWidth, behavior: 'smooth' });
+                }
 
-            function start() {
-                stop();
-                if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-                timer = setInterval(function () { if (!paused && !document.hidden) show(current + 1); }, 4000);
-            }
+                function sync() {
+                    var i = Math.round(track.scrollLeft / track.clientWidth);
+                    if (i < 0 || i >= slides) return;
+                    current = i;
+                    dots.forEach(function (d, k) { d.classList.toggle('active', k === i); });
+                }
 
-            function stop() { if (timer) { clearInterval(timer); timer = null; } }
+                function start() {
+                    if (timer) { clearInterval(timer); timer = null; }
+                    if (!interval || reduceMotion) return;
+                    timer = setInterval(function () { if (!paused && !document.hidden) show(current + 1); }, interval);
+                }
 
-            track.addEventListener('scroll', sync, { passive: true });
-            dots.forEach(function (d) { d.addEventListener('click', function () { show(Number(d.dataset.index)); start(); }); });
-            ['mouseenter', 'touchstart', 'focusin'].forEach(function (ev) { track.addEventListener(ev, function () { paused = true; }, { passive: true }); });
-            ['mouseleave', 'touchend', 'focusout'].forEach(function (ev) { track.addEventListener(ev, function () { paused = false; }, { passive: true }); });
-            window.addEventListener('resize', function () { track.scrollTo({ left: current * track.clientWidth }); });
-            start();
+                track.addEventListener('scroll', sync, { passive: true });
+                dots.forEach(function (d) { d.addEventListener('click', function () { show(Number(d.getAttribute('data-index'))); start(); }); });
+                ['mouseenter', 'touchstart', 'focusin'].forEach(function (ev) { track.addEventListener(ev, function () { paused = true; }, { passive: true }); });
+                ['mouseleave', 'touchend', 'focusout'].forEach(function (ev) { track.addEventListener(ev, function () { paused = false; }, { passive: true }); });
+                window.addEventListener('resize', function () { track.scrollTo({ left: current * track.clientWidth }); });
+                start();
+            });
         })();
     </script>
 

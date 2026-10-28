@@ -290,7 +290,7 @@ body {
     /* 5. 列表排版升級：讓舞伴、攝影師卡片在電腦版變成「左右兩欄並排」 */
     /* 這裡使用 CSS Grid 排版，它會自動尋找 container 內除了搜尋框和標題以外的卡片元素並排 */
     .photographer-list-wrapper, 
-    .container > div:not(.search-wrapper):not(.page-title):not(.new-promo-banner) {
+    .container > div:not(.search-wrapper):not(.page-title):not(.new-promo-banner):not(.carousel) {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
         gap: 20px;

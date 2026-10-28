@@ -309,18 +309,22 @@
 
                     <div class="stats-container">
                         <div class="stat-box">
-                            <span class="stat-num">0</span>
+                            <span class="stat-num"><%= locals.stats ? stats.bookings : 0 %></span>
                             <span class="stat-label">次預約</span>
                         </div>
                         <div class="stat-box">
-                            <span class="stat-num">0.0</span>
+                            <span class="stat-num"><%= locals.stats ? stats.rating : '—' %></span>
                             <span class="stat-label">評分</span>
                         </div>
                         <div class="stat-box">
-                            <span class="stat-num">0</span>
+                            <span class="stat-num"><%= locals.stats ? stats.posts : 0 %></span>
                             <span class="stat-label">貼文</span>
                         </div>
                     </div>
+
+                    <a href="/logout" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 20px; padding: 12px; border: 1px solid #DDDDDD; border-radius: 12px; color: #666666; font-size: 14px; font-weight: 700; text-decoration: none;">
+                        <i class="fi fi-br-sign-out-alt" aria-hidden="true"></i> 登出
+                    </a>
                 </aside>
 
                 <!-- ─── 右側欄：主要管理控制區 ─── -->
