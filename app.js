@@ -188,21 +188,13 @@ app.use((req, res, next) => {
 // --- 4. 路由開始 ---
 
 // 首頁路由
-// 首頁主視覺輪播：第一張維持原本的合作教室優惠，其餘介紹網站的主要功能
+// 首頁橫幅：第一張維持合作教室優惠
 const PROMO_SLIDES = [
     { href: '/venues', tag: 'Sponsored', partner: '合作教室：Studio', image: '/img/venues1.jpg', imageAlt: '合作教室舞蹈空間',
-      title: '憑 App 簽到頁面，', highlight: '場租享 9 折優惠', footer: '點擊查看詳情與位置' },
-    { href: '/partner', tag: '找舞伴', icon: 'fi-br-users-alt',
-      title: '想找舞伴？發一則貼文，等人來私訊', footer: '前往找舞伴 →' },
-    { href: '/venues', tag: '找教室', icon: 'fi-br-marker',
-      title: '線上預約整點時段，每天 08:00–22:00', footer: '挑一間教室，立即預約 →' },
-    { href: '/photographers', tag: '找攝影', icon: 'fi-br-camera',
-      title: '請舞者攝影師，替你的舞蹈留下精彩畫面', footer: '挑選攝影師、直接預約拍攝 →' },
-    { href: '/blacklist', tag: '安全社群', icon: 'fi-br-cross-circle',
-      title: '檢舉經管理員審核，讓揪團更安心', footer: '查看黑名單與檢舉規則 →' }
+      title: '憑 App 簽到頁面，', highlight: '場租享 9 折優惠', footer: '點擊查看詳情與位置' }
 ];
 
-// 首頁橫幅：第一張是合作優惠，接著是推薦場地，最後是網站功能介紹
+// 首頁橫幅：合作優惠 + 推薦場地
 function buildPromoSlides() {
     const roomSlides = rooms.map(r => ({
         href: '/venues/' + r.id, tag: '推薦場地', partner: r.dist,
@@ -210,7 +202,7 @@ function buildPromoSlides() {
         title: r.name + '　', highlight: '$' + r.price + ' / hr',
         footer: '查看場地並預約 →'
     }));
-    return [PROMO_SLIDES[0]].concat(roomSlides, PROMO_SLIDES.slice(1));
+    return PROMO_SLIDES.concat(roomSlides);
 }
 
 app.get('/', (req, res) => {
