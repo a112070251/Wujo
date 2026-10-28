@@ -202,13 +202,23 @@ const PROMO_SLIDES = [
       title: '檢舉經管理員審核，讓揪團更安心', footer: '查看黑名單與檢舉規則 →' }
 ];
 
+// 首頁橫幅：第一張是合作優惠，接著是推薦場地，最後是網站功能介紹
+function buildPromoSlides() {
+    const roomSlides = rooms.map(r => ({
+        href: '/venues/' + r.id, tag: '推薦場地', partner: r.dist,
+        image: r.image, imageAlt: r.name,
+        title: r.name + '　', highlight: '$' + r.price + ' / hr',
+        footer: '查看場地並預約 →'
+    }));
+    return [PROMO_SLIDES[0]].concat(roomSlides, PROMO_SLIDES.slice(1));
+}
+
 app.get('/', (req, res) => {
     const latest = store.getLatestPost();
     res.render('index', {
         featuredPost: latest ? toPostView(latest) : null,
         featuredVenue: rooms[0],
-        venues: rooms,
-        promoSlides: PROMO_SLIDES
+        promoSlides: buildPromoSlides()
     });
 });
 
