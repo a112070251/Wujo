@@ -46,7 +46,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 if (!process.env.SESSION_SECRET && process.env.NODE_ENV === 'production') {
     throw new Error('請設定環境變數 SESSION_SECRET');
 }
+const SqliteStore = require('./sessionStore');
 const sessionMiddleware = session({
+    store: new SqliteStore(store.db),
     secret: process.env.SESSION_SECRET || 'dev-only-secret-change-me',
     resave: false,
     saveUninitialized: false,
