@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <%- include('section/head') %>
-    <title>Wu Jo - 舞者社群平台</title>
+    <title>WU JO - 舞者社群平台</title>
     
     <style>
         /* ==========================================
@@ -300,6 +300,60 @@
             font-weight: 500;
         }
 
+        /* 推薦場地：幻燈片輪播 */
+        .carousel { position: relative; }
+
+        .carousel-track {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+            gap: 0;
+        }
+
+        .carousel-track::-webkit-scrollbar { display: none; }
+
+        .carousel-slide.venue-card {
+            flex: 0 0 100%;
+            scroll-snap-align: start;
+            height: auto;
+            border-radius: 24px;
+        }
+
+        .carousel-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .carousel-dot {
+            width: 8px;
+            height: 8px;
+            padding: 0;
+            border: none;
+            border-radius: 50%;
+            background-color: #DDDDDD;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .carousel-dot.active {
+            width: 22px;
+            border-radius: 4px;
+            background-color: var(--color-brand);
+        }
+
+        .credit-line {
+            text-align: center;
+            font-size: 11px;
+            color: #AAAAAA;
+            margin: 28px 0 0 0;
+        }
+
+        .credit-line a { color: #AAAAAA; }
+
         .venue-price {
             font-size: 18px;
             font-weight: 900;
@@ -317,7 +371,7 @@
             
             <!-- 頂部精神標語 -->
             <header class="hero-header"> 
-                <h1 class="hero-title">跳~~~舞~~~</h1>
+                <h1 class="hero-title">舞揪謀啾</h1>
                 <p class="hero-subtitle">你你你你要跳舞嗎？</p>
             </header>
 
@@ -377,24 +431,79 @@
                         <a href="/venues" class="btn-view-all">尋找更多</a>
                     </div>
                     
-                    <a href="/venues" class="venue-card">
-                        <div class="venue-img-wrapper">
-                            <img src="<%= featuredVenue.image %>" class="venue-img" alt="推薦場地照片">
+                    <div class="carousel" id="venueCarousel" role="region" aria-roledescription="carousel" aria-label="推薦場地">
+                        <div class="carousel-track" id="venueTrack">
+                            <% venues.forEach(function(v, i) { %>
+                                <a href="/venues/<%= v.id %>" class="venue-card carousel-slide" aria-label="第 <%= i + 1 %> 張，共 <%= venues.length %> 張：<%= v.name %>">
+                                    <div class="venue-img-wrapper">
+                                        <img src="<%= v.image %>" class="venue-img" alt="<%= v.name %>" <%= i > 0 ? 'loading="lazy"' : '' %>>
+                                    </div>
+                                    <div class="venue-info">
+                                        <h4 class="venue-name"><%= v.name %></h4>
+                                        <p class="venue-location"><i class="fi fi-br-marker" aria-hidden="true"></i> <%= v.dist %></p>
+                                        <div class="venue-price">
+                                            $<%= v.price %> <span style="font-size: 11px; font-weight: 500; color: #777;">/ hr</span>
+                                        </div>
+                                    </div>
+                                </a>
+                            <% }); %>
                         </div>
-                        <div class="venue-info">
-                            <h4 class="venue-name"><%= featuredVenue.name %></h4>
-                            <p class="venue-location">🔍 <%= featuredVenue.dist %></p>
-                            <div class="venue-price">
-                                $<%= featuredVenue.price %> <span style="font-size: 11px; font-weight: 500; color: #777;">/ hr</span>
+                        <% if (venues.length > 1) { %>
+                            <div class="carousel-dots">
+                                <% venues.forEach(function(v, i) { %>
+                                    <button type="button" class="carousel-dot <%= i === 0 ? 'active' : '' %>" data-index="<%= i %>" aria-label="看第 <%= i + 1 %> 張：<%= v.name %>"></button>
+                                <% }); %>
                             </div>
-                        </div>
-                    </a>
+                        <% } %>
+                    </div>
                 </section>
 
             </div>
 
+            <p class="credit-line">Icons: Uicons by <a href="https://www.flaticon.com/uicons" target="_blank" rel="noopener noreferrer">Flaticon</a></p>
+
         </div>
     </main>
+
+    <script>
+        // 推薦場地輪播：每 4 秒自動換下一張；手指滑動、點圓點都可以；滑鼠移入或碰觸時暫停
+        (function () {
+            var track = document.getElementById('venueTrack');
+            if (!track) return;
+            var dots = Array.prototype.slice.call(document.querySelectorAll('.carousel-dot'));
+            var slides = track.children.length;
+            if (slides < 2) return;
+
+            var current = 0, timer = null, paused = false;
+
+            function show(i) {
+                current = (i + slides) % slides;
+                track.scrollTo({ left: current * track.clientWidth, behavior: 'smooth' });
+            }
+
+            function sync() {
+                var i = Math.round(track.scrollLeft / track.clientWidth);
+                if (i < 0 || i >= slides) return;
+                current = i;
+                dots.forEach(function (d, k) { d.classList.toggle('active', k === i); });
+            }
+
+            function start() {
+                stop();
+                if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+                timer = setInterval(function () { if (!paused && !document.hidden) show(current + 1); }, 4000);
+            }
+
+            function stop() { if (timer) { clearInterval(timer); timer = null; } }
+
+            track.addEventListener('scroll', sync, { passive: true });
+            dots.forEach(function (d) { d.addEventListener('click', function () { show(Number(d.dataset.index)); start(); }); });
+            ['mouseenter', 'touchstart', 'focusin'].forEach(function (ev) { track.addEventListener(ev, function () { paused = true; }, { passive: true }); });
+            ['mouseleave', 'touchend', 'focusout'].forEach(function (ev) { track.addEventListener(ev, function () { paused = false; }, { passive: true }); });
+            window.addEventListener('resize', function () { track.scrollTo({ left: current * track.clientWidth }); });
+            start();
+        })();
+    </script>
 
 </body>
 </html>

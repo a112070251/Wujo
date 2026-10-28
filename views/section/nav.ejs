@@ -11,13 +11,13 @@
         margin: 0 auto;
     }
 
-    /* 左上角系統名稱 Wu Jo (#823A00) */
+    /* 左上角系統名稱 WU JO (#823A00) */
     .brand-logo-top {
         color: #823A00 !important;
         font-size: 24px;
         font-weight: 900;
         text-decoration: none;
-        letter-spacing: -0.5px;
+        letter-spacing: 1px;
         display: inline-block;
     }
 
@@ -99,6 +99,44 @@
         position: relative;
     }
 
+    .nav-icon-img i,
+    .header-icon-link i {
+        display: block;
+        line-height: 1;
+    }
+
+    /* 右上角圖示按鈕（管理、通知、我的、登出） */
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .header-icon-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 40px;
+        height: 40px;
+        border-radius: 20px;
+        color: #823A00 !important;
+        text-decoration: none;
+        font-size: 18px;
+    }
+
+    .header-icon-link:hover {
+        background-color: #F5EFEA;
+    }
+
+    .header-icon-link .nav-icon-img {
+        font-size: 18px;
+    }
+
+    /* 圖示字型載入失敗時，改顯示文字，避免按鈕消失 */
+    .header-label { display: none; font-size: 13px; font-weight: 700; }
+    .no-icons .header-label { display: inline; padding: 0 8px; }
+    .no-icons .site-header i.fi { display: none; }
+
     /* 未讀訊息紅點數字 */
     .nav-badge {
         position: absolute;
@@ -118,15 +156,19 @@
 </style>
 
 <header class="site-header">
-    <a href="/" class="brand-logo-top">Wu Jo</a>
-    
-    <div>
+    <a href="/" class="brand-logo-top">WU JO</a>
+
+    <div class="header-actions">
         <% if (locals.user && user) { %>
             <% if (locals.isAdmin) { %>
-                <a href="/admin/reports" class="btn-logout-top">管理</a>
+                <a href="/admin/reports" class="header-icon-link" title="管理" aria-label="管理"><i class="fi fi-br-settings-sliders" aria-hidden="true"></i><span class="header-label">管理</span></a>
             <% } %>
-            <a href="/notifications" class="btn-logout-top" aria-label="通知">🔔<% if (locals.notifCount > 0) { %> <%= notifCount > 99 ? '99+' : notifCount %><% } %></a>
-            <a href="/logout" class="btn-logout-top">登出</a>
+            <a href="/notifications" class="header-icon-link" title="通知" aria-label="通知">
+                <span class="nav-icon-img"><i class="fi fi-br-bell" aria-hidden="true"></i><% if (locals.notifCount > 0) { %><span class="nav-badge"><%= notifCount > 99 ? '99+' : notifCount %></span><% } %></span>
+                <span class="header-label">通知</span>
+            </a>
+            <a href="/me" class="header-icon-link" title="我的" aria-label="我的"><i class="fi fi-br-user" aria-hidden="true"></i><span class="header-label">我的</span></a>
+            <a href="/logout" class="header-icon-link" title="登出" aria-label="登出"><i class="fi fi-br-sign-out-alt" aria-hidden="true"></i><span class="header-label">登出</span></a>
         <% } else { %>
             <a href="/login" class="btn-login-top">登入</a>
         <% } %>
@@ -135,28 +177,33 @@
 
 <nav class="bottom-nav">
     <a href="/partner" class="nav-item-box inactive">
-        <span class="nav-icon-img">👯</span>
+        <span class="nav-icon-img"><i class="fi fi-br-users-alt" aria-hidden="true"></i></span>
         <span>找舞伴</span>
     </a>
-    <a href="/messages" class="nav-item-box inactive">
-        <span class="nav-icon-img">💬<% if (locals.unreadCount > 0) { %><span class="nav-badge"><%= unreadCount > 99 ? '99+' : unreadCount %></span><% } %></span>
-        <span>訊息</span>
-    </a>
-    <a href="/blacklist" class="nav-item-box inactive">
-        <span class="nav-icon-img">🚫</span>
-        <span>黑名單</span>
-    </a>
     <a href="/venues" class="nav-item-box inactive">
-        <span class="nav-icon-img">📍</span>
+        <span class="nav-icon-img"><i class="fi fi-br-marker" aria-hidden="true"></i></span>
         <span>找教室</span>
     </a>
     <a href="/photographers" class="nav-item-box inactive">
-        <span class="nav-icon-img">📷</span>
+        <span class="nav-icon-img"><i class="fi fi-br-camera" aria-hidden="true"></i></span>
         <span>找攝影</span>
     </a>
-    
-    <a href="/me" class="nav-item-box inactive">
-        <span class="nav-icon-img">👤</span>
-        <span>我的</span>
+    <a href="/messages" class="nav-item-box inactive">
+        <span class="nav-icon-img"><i class="fi fi-br-comment-alt" aria-hidden="true"></i><% if (locals.unreadCount > 0) { %><span class="nav-badge"><%= unreadCount > 99 ? '99+' : unreadCount %></span><% } %></span>
+        <span>訊息</span>
+    </a>
+    <a href="/blacklist" class="nav-item-box inactive">
+        <span class="nav-icon-img"><i class="fi fi-br-cross-circle" aria-hidden="true"></i></span>
+        <span>黑名單</span>
     </a>
 </nav>
+
+<script>
+    // 圖示字型載入失敗時（例如離線），標記 no-icons 以顯示文字替代
+    window.addEventListener('load', function () {
+        var el = document.querySelector('i.fi');
+        if (!el) return;
+        var content = window.getComputedStyle(el, '::before').content;
+        if (!content || content === 'none' || content === 'normal') document.documentElement.classList.add('no-icons');
+    });
+</script>
