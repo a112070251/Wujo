@@ -382,7 +382,7 @@
                 <div class="profile-side-card">
                     <div class="profile-avatar-wrapper">
                         <div class="avatar-container">
-                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= profile.avatar %>" class="profile-img" alt="舞者頭像">
+                            <img src="/avatar/<%= encodeURIComponent(profile.avatar) %>" class="profile-img" alt="舞者頭像">
                             <% if (profile.reportCount >= 4) { %>
                                 <span class="badge-danger">異常</span>
                             <% } %>

@@ -210,7 +210,7 @@
 
                             <div class="avatar-container">
                                 <div class="chat-avatar-border">
-                                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= encodeURIComponent(chat.avatar) %>" class="chat-avatar" alt="使用者頭像">
+                                    <img src="/avatar/<%= encodeURIComponent(chat.avatar) %>" class="chat-avatar" alt="使用者頭像">
                                 </div>
                                 <% if (chat.unread > 0) { %>
                                     <span class="unread-badge"><%= chat.unread > 99 ? '99+' : chat.unread %></span>

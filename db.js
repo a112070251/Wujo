@@ -171,6 +171,15 @@ db.exec(`
         created_at TEXT NOT NULL DEFAULT (datetime('now')),
         UNIQUE (user_id, url)
     );
+
+    -- 自訂頭像：seed = 選了系統圖（DiceBear 種子），data = 自己上傳的圖片（已縮成小圖）
+    CREATE TABLE IF NOT EXISTS user_avatars (
+        user_id    INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        seed       TEXT,
+        mime       TEXT,
+        data       BLOB,
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
 `);
 
 const stmts = {
@@ -181,6 +190,13 @@ const stmts = {
     byName: db.prepare('SELECT * FROM users WHERE name = ?'),
     byEmail: db.prepare('SELECT * FROM users WHERE email = ?'),
     byLogin: db.prepare('SELECT * FROM users WHERE name = ? OR email = ?'),
+    avatarByName: db.prepare('SELECT a.seed, a.mime, a.data FROM users u JOIN user_avatars a ON a.user_id = u.id WHERE u.name = ?'),
+    avatarInfo: db.prepare('SELECT seed, (data IS NOT NULL) AS has_image FROM user_avatars WHERE user_id = ?'),
+    avatarSetSeed: db.prepare(`INSERT INTO user_avatars (user_id, seed, mime, data, updated_at) VALUES (?, ?, NULL, NULL, datetime('now'))
+        ON CONFLICT(user_id) DO UPDATE SET seed = excluded.seed, mime = NULL, data = NULL, updated_at = datetime('now')`),
+    avatarSetImage: db.prepare(`INSERT INTO user_avatars (user_id, seed, mime, data, updated_at) VALUES (?, NULL, ?, ?, datetime('now'))
+        ON CONFLICT(user_id) DO UPDATE SET seed = NULL, mime = excluded.mime, data = excluded.data, updated_at = datetime('now')`),
+    avatarClear: db.prepare('DELETE FROM user_avatars WHERE user_id = ?'),
     insertUser: db.prepare('INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)'),
 
     // --- posts ---
@@ -425,6 +441,12 @@ module.exports = {
     // 刪除帳號：貼文、私訊、評價、預約、攝影師檔案、通知等都會一併刪除（ON DELETE CASCADE）
     deleteUser: (id) => stmts.deleteUser.run(id).changes,
     findUserByName: (name) => stmts.byName.get(name),
+    // 頭像：回傳 { seed, mime, data } 或 undefined（沒設定就用暱稱當預設種子）
+    getAvatarByName: (name) => stmts.avatarByName.get(name),
+    getAvatarInfo: (userId) => stmts.avatarInfo.get(userId),
+    setAvatarSeed: (userId, seed) => stmts.avatarSetSeed.run(userId, seed),
+    setAvatarImage: (userId, mime, buf) => stmts.avatarSetImage.run(userId, mime, buf),
+    clearAvatar: (userId) => stmts.avatarClear.run(userId),
     findUserByEmail: (email) => stmts.byEmail.get(email),
     // 登入時可用「暱稱」或「電子信箱」
     findUserByLogin: (login) => stmts.byLogin.get(login, login),

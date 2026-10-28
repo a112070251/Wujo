@@ -39,7 +39,7 @@ app.use((req, res, next) => {
 });
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '250kb' })); // 頭像上傳會送縮好的小圖
 
 // --- 1. Session 設定 ---
 // secret 請透過環境變數 SESSION_SECRET 提供；正式環境（NODE_ENV=production）沒設定會直接報錯
@@ -186,6 +186,69 @@ app.use((req, res, next) => {
 });
 
 // --- 4. 路由開始 ---
+
+// --- 頭像 ---
+// 系統頭像（DiceBear 種子）。也接受「隨機」產生的英數字種子
+const SYSTEM_AVATARS = ['Mia', 'Leo', 'Zoe', 'Kai', 'Luna', 'Max', 'Nova', 'Remy', 'Sky', 'Jazz', 'Coco', 'Rex'];
+const SEED_RE = /^[A-Za-z0-9]{1,24}$/;
+const MAX_AVATAR_BYTES = 150 * 1024;
+const avatarLimiter = new Limiter(30, 60 * 60 * 1000); // 每人每小時最多更換 30 次
+
+// 用檔案開頭的位元組判斷真正的圖片格式（只收 JPEG / PNG / WebP，不收 SVG）
+function sniffImage(buf) {
+    if (buf.length > 12 && buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF) return 'image/jpeg';
+    if (buf.length > 12 && buf.slice(0, 8).equals(Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]))) return 'image/png';
+    if (buf.length > 12 && buf.slice(0, 4).toString('latin1') === 'RIFF' && buf.slice(8, 12).toString('latin1') === 'WEBP') return 'image/webp';
+    return null;
+}
+
+// 全站所有頭像都從這裡讀：有上傳就給圖片，有選系統圖就導向該圖，否則用暱稱當種子
+app.get('/avatar/:name', (req, res) => {
+    const name = String(req.params.name || '').slice(0, 60);
+    const a = store.getAvatarByName(name);
+    if (a && a.data) {
+        res.set({
+            'Content-Type': a.mime,
+            'X-Content-Type-Options': 'nosniff',
+            'Content-Security-Policy': "default-src 'none'",
+            'Cache-Control': 'private, max-age=60'
+        });
+        return res.send(Buffer.from(a.data));
+    }
+    const seed = a && a.seed ? a.seed : name;
+    res.set('Cache-Control', 'private, max-age=60');
+    res.redirect('https://api.dicebear.com/7.x/avataaars/svg?seed=' + encodeURIComponent(seed));
+});
+
+// 更換頭像：mode = seed（系統圖）/ image（上傳，data 為縮好的 dataURL）/ reset（還原預設）
+app.post('/me/avatar', (req, res) => {
+    const me = req.session.user;
+    if (!me || !Number.isInteger(me.id)) return res.status(401).json({ ok: false, error: '請先登入' });
+    const key = String(me.id);
+    if (avatarLimiter.isBlocked(key)) return res.status(429).json({ ok: false, error: '更換太頻繁，請稍後再試' });
+    const body = req.body || {};
+    const mode = String(body.mode || '');
+
+    if (mode === 'reset') {
+        store.clearAvatar(me.id);
+    } else if (mode === 'seed') {
+        const seed = String(body.seed || '');
+        if (!SEED_RE.test(seed)) return res.status(400).json({ ok: false, error: '頭像選項不正確' });
+        store.setAvatarSeed(me.id, seed);
+    } else if (mode === 'image') {
+        const m = /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/.exec(String(body.data || ''));
+        if (!m) return res.status(400).json({ ok: false, error: '只能上傳 JPG、PNG 或 WebP 圖片' });
+        const buf = Buffer.from(m[2], 'base64');
+        if (buf.length > MAX_AVATAR_BYTES) return res.status(413).json({ ok: false, error: '圖片太大，請換一張小一點的' });
+        const mime = sniffImage(buf);
+        if (!mime) return res.status(400).json({ ok: false, error: '檔案不是有效的圖片' });
+        store.setAvatarImage(me.id, mime, buf);
+    } else {
+        return res.status(400).json({ ok: false, error: '不支援的操作' });
+    }
+    avatarLimiter.hit(key);
+    res.json({ ok: true, url: '/avatar/' + encodeURIComponent(me.name) + '?v=' + Date.now() });
+});
 
 // 首頁路由
 // 首頁橫幅：第一張維持合作教室優惠
@@ -395,7 +458,7 @@ app.get('/me', (req, res) => {
         posts: hasId ? store.countPostsByUser(req.session.user.id) : 0
     };
 
-    res.render('me', { user: req.session.user, stats, bookings, shootsAsClient, shootsAsPhotographer, notice, photographer, portfolio, maxPortfolio: MAX_PORTFOLIO_ITEMS, maxPortfolioTitle: MAX_PORTFOLIO_TITLE, photoStyles: PHOTO_STYLES, photoLocations: PHOTO_LOCATIONS, maxPhotoBio: MAX_PHOTO_BIO });
+    res.render('me', { user: req.session.user, systemAvatars: SYSTEM_AVATARS, stats, bookings, shootsAsClient, shootsAsPhotographer, notice, photographer, portfolio, maxPortfolio: MAX_PORTFOLIO_ITEMS, maxPortfolioTitle: MAX_PORTFOLIO_TITLE, photoStyles: PHOTO_STYLES, photoLocations: PHOTO_LOCATIONS, maxPhotoBio: MAX_PHOTO_BIO });
 });
 
 // --- 刪除自己的帳號（需輸入密碼確認）---

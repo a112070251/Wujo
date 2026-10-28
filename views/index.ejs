@@ -363,7 +363,7 @@
                     <% } else { %>
                     <a href="/partner" class="post-card">
                         <div class="post-author-box">
-                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= encodeURIComponent(featuredPost.author) %>" class="author-avatar" alt="作者頭像">
+                            <img src="/avatar/<%= encodeURIComponent(featuredPost.author) %>" class="author-avatar" alt="作者頭像">
                             <div>
                                 <p class="author-name"><%= featuredPost.author %></p>
                                 <p class="post-time"><%= featuredPost.time %></p>

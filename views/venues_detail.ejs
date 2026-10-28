@@ -139,6 +139,10 @@
         .book-input { padding: 12px; border: 1px solid #DDDDDD; border-radius: 12px; font-size: 14px; background: #FFFFFF; }
         .hour-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 8px; }
         .hour-chip { text-align: center; padding: 8px 0; border-radius: 10px; font-size: 13px; font-weight: 700; background: #F5EFEA; color: #653600; }
+        button.hour-chip { border: 2px solid transparent; font-family: inherit; cursor: pointer; transition: all 0.15s ease; }
+        button.hour-chip:hover { border-color: rgba(130, 58, 0, 0.35); }
+        button.hour-chip:active { transform: scale(0.96); }
+        .hour-chip.selected { background: #823A00; color: #FFFFFF; border-color: #823A00; }
         .hour-chip.taken { background: #F0F0F0; color: #AAAAAA; text-decoration: line-through; }
         .book-hint { font-size: 12px; color: #888888; margin-top: 8px; line-height: 1.6; }
         .btn-booking-submit:disabled { background: #CCCCCC; box-shadow: none; cursor: not-allowed; }
@@ -194,10 +198,14 @@
                             </div>
                         </form>
 
-                        <p class="book-hint"><%= dateText %> 的時段（灰色為已被預約或已過）：</p>
+                        <p class="book-hint"><%= dateText %> 的時段（灰色為已被預約或已過）<% if (locals.user) { %>，直接點選想預約的開始時間<% } %>：</p>
                         <div class="hour-grid">
                             <% hours.forEach(function(h) { %>
-                                <span class="hour-chip <%= h.available ? '' : 'taken' %>"><%= h.label %></span>
+                                <% if (h.available && locals.user) { %>
+                                    <button type="button" class="hour-chip" data-hour="<%= h.hour %>" aria-pressed="false"><%= h.label %></button>
+                                <% } else { %>
+                                    <span class="hour-chip <%= h.available ? '' : 'taken' %>" data-hour="<%= h.hour %>" data-free="<%= h.available ? 1 : 0 %>"><%= h.label %></span>
+                                <% } %>
                             <% }); %>
                         </div>
 
@@ -244,6 +252,51 @@
         <% } %>
 
     </main>
+
+    <script>
+        // 點時段格子 = 選擇開始時間；使用時數只提供「從這個時段起連續空著」的選項
+        (function () {
+            var chips = Array.prototype.slice.call(document.querySelectorAll('button.hour-chip'));
+            var startSel = document.getElementById('startHour');
+            var durSel = document.getElementById('duration');
+            if (!chips.length || !startSel || !durSel) return;
+
+            var free = {};
+            chips.forEach(function (c) { free[c.getAttribute('data-hour')] = true; });
+
+            function sync() {
+                var start = Number(startSel.value);
+                chips.forEach(function (c) {
+                    var on = Number(c.getAttribute('data-hour')) === start;
+                    c.classList.toggle('selected', on);
+                    c.setAttribute('aria-pressed', on ? 'true' : 'false');
+                });
+                var run = 0;
+                while (free[String(start + run)]) run++;
+                var firstOk = null;
+                Array.prototype.forEach.call(durSel.options, function (o) {
+                    var ok = Number(o.value) <= run;
+                    o.disabled = !ok;
+                    if (ok && firstOk === null) firstOk = o.value;
+                });
+                if (durSel.selectedOptions[0] && durSel.selectedOptions[0].disabled) {
+                    var ok = null;
+                    for (var i = durSel.options.length - 1; i >= 0; i--) if (!durSel.options[i].disabled) { ok = durSel.options[i].value; break; }
+                    durSel.value = ok !== null ? ok : firstOk;
+                }
+            }
+
+            chips.forEach(function (c) {
+                c.addEventListener('click', function () {
+                    startSel.value = c.getAttribute('data-hour');
+                    sync();
+                    startSel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                });
+            });
+            startSel.addEventListener('change', sync);
+            sync();
+        })();
+    </script>
 
 </body>
 </html>

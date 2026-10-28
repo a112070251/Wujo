@@ -245,7 +245,7 @@
         <a href="/messages" class="back-btn">← 返回</a>
 
         <a href="/profile/<%= encodeURIComponent(chatTarget.name) %>" style="display: flex; align-items: center; text-decoration: none; color: inherit;">
-            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= encodeURIComponent(chatTarget.avatar) %>" class="chat-target-avatar" alt="使用者頭像">
+            <img src="/avatar/<%= encodeURIComponent(chatTarget.avatar) %>" class="chat-target-avatar" alt="使用者頭像">
             <span class="chat-target-name"><%= chatTarget.name %></span>
         </a>
 
