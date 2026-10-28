@@ -96,6 +96,25 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             transition: transform 0.1s;
         }
+        /* 更換頭像視窗 */
+        .avatar-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 200; }
+        .avatar-modal.open { display: flex; }
+        .avatar-sheet { background: #FFFFFF; border-radius: 24px; width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; padding: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.25); }
+        .avatar-sheet h3 { font-size: 18px; font-weight: 800; color: #222; margin-bottom: 4px; }
+        .avatar-sheet .sheet-sub { font-size: 12px; color: #888; margin-bottom: 16px; }
+        .avatar-sheet h4 { font-size: 13px; font-weight: 800; color: #823A00; margin: 16px 0 8px; }
+        .avatar-choices { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .avatar-choice { padding: 3px; border: 2px solid transparent; border-radius: 50%; background: #F5EFEA; cursor: pointer; aspect-ratio: 1; }
+        .avatar-choice img { width: 100%; height: 100%; border-radius: 50%; display: block; }
+        .avatar-choice:hover { border-color: rgba(130,58,0,0.4); }
+        .avatar-choice.current { border-color: #823A00; }
+        .avatar-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+        .avatar-btn { flex: 1 1 auto; padding: 10px 14px; border-radius: 12px; border: 1px solid #E5D5C8; background: #FFFFFF; color: #653600; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+        .avatar-btn.primary { background: #823A00; color: #FFFFFF; border-color: #823A00; }
+        .avatar-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .avatar-msg { font-size: 12px; margin-top: 10px; min-height: 16px; color: #888; }
+        .avatar-msg.err { color: #C0392B; font-weight: 700; }
+        .avatar-close { margin-top: 14px; width: 100%; }
         #changeAvatarBtn:active { transform: scale(0.9); }
         #changeAvatarBtn svg { width: 14px; height: 14px; stroke: currentColor; }
 
@@ -290,9 +309,9 @@
                     <div class="avatar-wrapper">
                         <div class="avatar-border">
                             <img id="userAvatar" alt="User Avatar" 
-                                 src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= user.name %>" />
+                                 src="/avatar/<%= encodeURIComponent(user.name) %>" />
                         </div>
-                        <button id="changeAvatarBtn" title="隨機更換頭貼">
+                        <button id="changeAvatarBtn" title="更換頭像" aria-label="更換頭像" type="button">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                             </svg>
@@ -579,20 +598,115 @@
         </div>
     </main>
 
-    <script>
-        const avatarImg = document.getElementById('userAvatar');
-        const changeBtn = document.getElementById('changeAvatarBtn');
+    <div class="avatar-modal" id="avatarModal" role="dialog" aria-modal="true" aria-labelledby="avatarTitle">
+        <div class="avatar-sheet">
+            <h3 id="avatarTitle">更換頭像</h3>
+            <p class="sheet-sub">可以選系統頭像，也可以上傳自己的照片。</p>
 
-        changeBtn.addEventListener('click', () => {
-            const randomSeed = Math.random().toString(36).substring(7);
-            avatarImg.classList.add('scaling');
-            setTimeout(() => {
-                avatarImg.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${randomSeed}`;
-                avatarImg.onload = () => {
-                    avatarImg.classList.remove('scaling');
-                };
-            }, 150);
-        });
+            <h4>系統頭像</h4>
+            <div class="avatar-choices" id="avatarChoices">
+                <% (locals.systemAvatars || []).forEach(function (seed) { %>
+                    <button type="button" class="avatar-choice" data-seed="<%= seed %>" aria-label="選擇頭像 <%= seed %>">
+                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= encodeURIComponent(seed) %>" alt="" loading="lazy">
+                    </button>
+                <% }); %>
+            </div>
+
+            <h4>其他方式</h4>
+            <div class="avatar-actions">
+                <button type="button" class="avatar-btn" id="avatarRandom">🎲 隨機一個</button>
+                <button type="button" class="avatar-btn primary" id="avatarUploadBtn">📷 上傳照片</button>
+                <button type="button" class="avatar-btn" id="avatarReset">還原預設</button>
+            </div>
+            <input type="file" id="avatarFile" accept="image/jpeg,image/png,image/webp" hidden>
+            <p class="avatar-msg" id="avatarMsg" role="status"></p>
+            <button type="button" class="avatar-btn avatar-close" id="avatarClose">完成</button>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            var avatarImg = document.getElementById('userAvatar');
+            var modal = document.getElementById('avatarModal');
+            var msg = document.getElementById('avatarMsg');
+            var fileInput = document.getElementById('avatarFile');
+            var busy = false;
+
+            function say(text, isErr) { msg.textContent = text || ''; msg.className = 'avatar-msg' + (isErr ? ' err' : ''); }
+            function open() { say(''); modal.classList.add('open'); }
+            function close() { modal.classList.remove('open'); }
+
+            // 送到伺服器；成功就換掉畫面上的頭像
+            function send(params) {
+                if (busy) return;
+                busy = true; say('儲存中…');
+                fetch('/me/avatar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams(params).toString(),
+                    credentials: 'same-origin'
+                }).then(function (r) {
+                    return r.json().catch(function () { return { ok: false, error: r.status === 413 ? '圖片太大，請換一張小一點的' : '儲存失敗，請稍後再試' }; });
+                }).then(function (d) {
+                    busy = false;
+                    if (!d.ok) return say(d.error || '儲存失敗', true);
+                    avatarImg.classList.add('scaling');
+                    avatarImg.onload = function () { avatarImg.classList.remove('scaling'); };
+                    avatarImg.src = d.url;
+                    say('已更新頭像 ✓');
+                    markCurrent(params.mode === 'seed' ? params.seed : null);
+                }).catch(function () { busy = false; say('網路異常，請稍後再試', true); });
+            }
+
+            function markCurrent(seed) {
+                Array.prototype.forEach.call(document.querySelectorAll('.avatar-choice'), function (b) {
+                    b.classList.toggle('current', !!seed && b.getAttribute('data-seed') === seed);
+                });
+            }
+
+            // 上傳照片：先在瀏覽器裡裁成正方形、縮到 256px 再送出（檔案小、也不用傳原圖）
+            function shrink(file) {
+                return new Promise(function (resolve, reject) {
+                    var url = URL.createObjectURL(file);
+                    var img = new Image();
+                    img.onload = function () {
+                        var side = Math.min(img.naturalWidth, img.naturalHeight);
+                        var c = document.createElement('canvas');
+                        c.width = c.height = 256;
+                        var ctx = c.getContext('2d');
+                        ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, 256, 256);
+                        ctx.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, 256, 256);
+                        URL.revokeObjectURL(url);
+                        resolve(c.toDataURL('image/jpeg', 0.85));
+                    };
+                    img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('bad')); };
+                    img.src = url;
+                });
+            }
+
+            document.getElementById('changeAvatarBtn').addEventListener('click', open);
+            document.getElementById('avatarClose').addEventListener('click', close);
+            modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
+            document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+
+            Array.prototype.forEach.call(document.querySelectorAll('.avatar-choice'), function (b) {
+                b.addEventListener('click', function () { send({ mode: 'seed', seed: b.getAttribute('data-seed') }); });
+            });
+            document.getElementById('avatarRandom').addEventListener('click', function () {
+                send({ mode: 'seed', seed: Math.random().toString(36).slice(2, 10) });
+            });
+            document.getElementById('avatarReset').addEventListener('click', function () { send({ mode: 'reset' }); });
+            document.getElementById('avatarUploadBtn').addEventListener('click', function () { fileInput.click(); });
+            fileInput.addEventListener('change', function () {
+                var f = fileInput.files && fileInput.files[0];
+                fileInput.value = '';
+                if (!f) return;
+                if (!/^image\/(jpeg|png|webp)$/.test(f.type)) return say('只能上傳 JPG、PNG 或 WebP 圖片', true);
+                if (f.size > 15 * 1024 * 1024) return say('這張照片太大了，請換一張', true);
+                shrink(f).then(function (dataUrl) { send({ mode: 'image', data: dataUrl }); })
+                         .catch(function () { say('讀不到這張圖片，請換一張', true); });
+            });
+        })();
     </script>
 </body>
 </html>

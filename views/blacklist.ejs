@@ -344,7 +344,7 @@
                     <% blacklisted.forEach(user => { %>
                         <div class="blacklist-card <%= user.reportCount >= 5 ? 'severe-alert' : '' %>">
                             
-                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= user.avatar %>" 
+                            <img src="/avatar/<%= encodeURIComponent(user.avatar) %>" 
                                  class="user-avatar-img <%= user.reportCount >= 5 ? 'banned' : '' %>" alt="使用者頭像">
                             
                             <div class="card-main-content">

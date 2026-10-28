@@ -208,7 +208,7 @@
             
             <div class="target-user-card">
                 <div class="avatar-border">
-                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=<%= targetUser.avatar %>" class="target-avatar" alt="avatar">
+                    <img src="/avatar/<%= encodeURIComponent(targetUser.avatar) %>" class="target-avatar" alt="avatar">
                 </div>
                 <h3 class="target-name"><%= targetUser.name %></h3>
                 <p class="target-dance"><%= targetUser.danceType %></p>
