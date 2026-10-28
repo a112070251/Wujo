@@ -188,12 +188,27 @@ app.use((req, res, next) => {
 // --- 4. 路由開始 ---
 
 // 首頁路由
+// 首頁主視覺輪播：第一張維持原本的合作教室優惠，其餘介紹網站的主要功能
+const PROMO_SLIDES = [
+    { href: '/venues', tag: 'Sponsored', partner: '合作教室：Studio', image: '/img/venues1.jpg', imageAlt: '合作教室舞蹈空間',
+      title: '憑 App 簽到頁面，', highlight: '場租享 9 折優惠', footer: '點擊查看詳情與位置' },
+    { href: '/partner', tag: '找舞伴', icon: 'fi-br-users-alt',
+      title: '想找舞伴？發一則貼文，等人來私訊', footer: '前往找舞伴 →' },
+    { href: '/venues', tag: '找教室', icon: 'fi-br-marker',
+      title: '線上預約整點時段，每天 08:00–22:00', footer: '挑一間教室，立即預約 →' },
+    { href: '/photographers', tag: '找攝影', icon: 'fi-br-camera',
+      title: '請舞者攝影師，替你的舞蹈留下精彩畫面', footer: '挑選攝影師、直接預約拍攝 →' },
+    { href: '/blacklist', tag: '安全社群', icon: 'fi-br-cross-circle',
+      title: '檢舉經管理員審核，讓揪團更安心', footer: '查看黑名單與檢舉規則 →' }
+];
+
 app.get('/', (req, res) => {
     const latest = store.getLatestPost();
     res.render('index', {
         featuredPost: latest ? toPostView(latest) : null,
         featuredVenue: rooms[0],
-        venues: rooms
+        venues: rooms,
+        promoSlides: PROMO_SLIDES
     });
 });
 
@@ -371,7 +386,14 @@ app.get('/me', (req, res) => {
         ? store.listShootsForPhotographer(req.session.user.id, today).filter(s => bookingRules.isUpcoming(s)).map(s => toShootView(s, 'photographer'))
         : [];
 
-    res.render('me', { user: req.session.user, bookings, shootsAsClient, shootsAsPhotographer, notice, photographer, portfolio, maxPortfolio: MAX_PORTFOLIO_ITEMS, maxPortfolioTitle: MAX_PORTFOLIO_TITLE, photoStyles: PHOTO_STYLES, photoLocations: PHOTO_LOCATIONS, maxPhotoBio: MAX_PHOTO_BIO });
+    const reviewStats = hasId ? store.partnerReviewStats(req.session.user.id) : null;
+    const stats = {
+        bookings: hasId ? store.countBookingsByUser(req.session.user.id) : 0,
+        rating: reviewStats && reviewStats.n > 0 ? reviewStats.avg.toFixed(1) : '—',
+        posts: hasId ? store.countPostsByUser(req.session.user.id) : 0
+    };
+
+    res.render('me', { user: req.session.user, stats, bookings, shootsAsClient, shootsAsPhotographer, notice, photographer, portfolio, maxPortfolio: MAX_PORTFOLIO_ITEMS, maxPortfolioTitle: MAX_PORTFOLIO_TITLE, photoStyles: PHOTO_STYLES, photoLocations: PHOTO_LOCATIONS, maxPhotoBio: MAX_PHOTO_BIO });
 });
 
 // --- 刪除自己的帳號（需輸入密碼確認）---
