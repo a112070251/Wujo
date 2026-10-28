@@ -192,7 +192,8 @@ app.get('/', (req, res) => {
     const latest = store.getLatestPost();
     res.render('index', {
         featuredPost: latest ? toPostView(latest) : null,
-        featuredVenue: rooms[0]
+        featuredVenue: rooms[0],
+        venues: rooms
     });
 });
 
