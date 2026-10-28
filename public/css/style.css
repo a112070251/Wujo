@@ -308,3 +308,26 @@ body {
         margin: 0 auto 30px auto;
     }
 }
+
+/* 左上角 WU JO：所有頁面共用同一份樣式（字型、大小、位置固定，不受各頁 * 規則影響） */
+.brand-logo-top {
+    font-family: "Noto Sans TC", "PingFang TC", system-ui, sans-serif !important;
+    color: #823A00 !important;
+    font-size: 24px !important;
+    font-weight: 900 !important;
+    font-style: normal !important;
+    line-height: 32px !important;
+    letter-spacing: 1px !important;
+    text-decoration: none !important;
+    background: none !important;
+    -webkit-text-fill-color: #823A00 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: inline-block;
+}
+.brand-logo-fixed {
+    position: absolute;
+    top: 20px;
+    left: 24px;
+    z-index: 5;
+}
