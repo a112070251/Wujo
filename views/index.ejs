@@ -52,13 +52,6 @@
             letter-spacing: 4px;
         }
 
-        .hero-subtitle {
-            font-size: 15px;
-            color: var(--color-brand);
-            letter-spacing: 3px;
-            font-weight: 500;
-        }
-
         /* 2. 合作教室優惠 Banner (完美響應式大寬度) */
         .promo-banner {
             background-color: var(--color-bg-card);
@@ -155,17 +148,11 @@
             font-weight: 500;
         }
 
-        /* 🏠 響應式網格：手機版上下堆疊，桌機自動切換為左右大氣雙欄對稱 */
+        /* 🏠 單欄區塊：橫幅輪播下方接最新貼文 */
         .home-grid {
             display: grid;
             grid-template-columns: 1fr;
             gap: 32px;
-        }
-
-        @media (min-width: 992px) {
-            .home-grid {
-                grid-template-columns: 1fr 1fr; /* 電腦版左右並排 */
-            }
         }
 
         /* 各版塊通用標題 */
@@ -266,63 +253,7 @@
             font-weight: 700;
         }
 
-        /* 4. 推薦場地卡片優化 */
-        .venue-card {
-            background-color: #FFFFFF;
-            border: 1px solid #EFEFEF;
-            border-radius: 24px;
-            overflow: hidden;
-            display: block;
-            text-decoration: none;
-            color: var(--color-text-main);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
-            transition: all 0.25s ease;
-            height: calc(100% - 40px); /* 讓兩側卡片高度自動拉齊齊平 */
-        }
-
-        .venue-card:hover {
-            border-color: rgba(130, 58, 0, 0.2);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(130, 58, 0, 0.05);
-        }
-
-        .venue-img-wrapper {
-            width: 100%;
-            height: 180px;
-            background-color: #E0E0E0;
-            overflow: hidden;
-        }
-
-        .venue-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.5s ease;
-        }
-
-        .venue-card:hover .venue-img {
-            transform: scale(1.03); /* 輕微懸浮放大特效 */
-        }
-
-        .venue-info {
-            padding: 24px;
-        }
-
-        .venue-name {
-            font-size: 18px;
-            font-weight: 800;
-            margin-bottom: 6px;
-            color: #222222;
-        }
-
-        .venue-location {
-            font-size: 13px;
-            color: #666666;
-            margin-bottom: 14px;
-            font-weight: 500;
-        }
-
-        /* 推薦場地：幻燈片輪播 */
+        /* 幻燈片輪播 */
         .carousel { position: relative; }
 
         .carousel-track {
@@ -335,13 +266,6 @@
         }
 
         .carousel-track::-webkit-scrollbar { display: none; }
-
-        .carousel-slide.venue-card {
-            flex: 0 0 100%;
-            scroll-snap-align: start;
-            height: auto;
-            border-radius: 24px;
-        }
 
         .carousel-dots {
             display: flex;
@@ -376,11 +300,6 @@
 
         .credit-line a { color: #AAAAAA; }
 
-        .venue-price {
-            font-size: 18px;
-            font-weight: 900;
-            color: var(--color-brand);
-        }
     </style>
 </head>
 <body>
@@ -394,10 +313,9 @@
             <!-- 頂部精神標語 -->
             <header class="hero-header"> 
                 <h1 class="hero-title">舞揪謀啾</h1>
-                <p class="hero-subtitle">你你你你要跳舞嗎？</p>
             </header>
 
-            <!-- 首頁主視覺：幻燈片輪播（第一張是合作教室優惠，其餘介紹網站功能） -->
+            <!-- 首頁主視覺：幻燈片輪播（合作優惠、推薦場地、網站功能介紹） -->
             <div class="carousel promo-carousel" data-autoplay="5000" role="region" aria-roledescription="carousel" aria-label="精選消息">
                 <div class="carousel-track">
                     <% promoSlides.forEach(function(s, i) { %>
@@ -427,10 +345,10 @@
                 </div>
             </div>
 
-            <!-- 網格佈局區：在寬螢幕自動切換左右雙欄對稱結構 -->
+            <!-- 最新貼文區 -->
             <div class="home-grid">
                 
-                <!-- 左側：最新貼文區塊 -->
+                <!-- 最新貼文區塊 -->
                 <section>
                     <div class="section-header">
                         <h3 class="section-title">👯 最新貼文</h3>
@@ -461,40 +379,6 @@
                     <% } %>
                 </section>
 
-                <!-- 右側：推薦場地區塊 -->
-                <section>
-                    <div class="section-header">
-                        <h3 class="section-title">📍 推薦場地</h3>
-                        <a href="/venues" class="btn-view-all">尋找更多</a>
-                    </div>
-                    
-                    <div class="carousel" data-autoplay="0" role="region" aria-roledescription="carousel" aria-label="推薦場地">
-                        <div class="carousel-track">
-                            <% venues.forEach(function(v, i) { %>
-                                <a href="/venues/<%= v.id %>" class="venue-card carousel-slide" aria-label="第 <%= i + 1 %> 張，共 <%= venues.length %> 張：<%= v.name %>">
-                                    <div class="venue-img-wrapper">
-                                        <img src="<%= v.image %>" class="venue-img" alt="<%= v.name %>" <%= i > 0 ? 'loading="lazy"' : '' %>>
-                                    </div>
-                                    <div class="venue-info">
-                                        <h4 class="venue-name"><%= v.name %></h4>
-                                        <p class="venue-location"><i class="fi fi-br-marker" aria-hidden="true"></i> <%= v.dist %></p>
-                                        <div class="venue-price">
-                                            $<%= v.price %> <span style="font-size: 11px; font-weight: 500; color: #777;">/ hr</span>
-                                        </div>
-                                    </div>
-                                </a>
-                            <% }); %>
-                        </div>
-                        <% if (venues.length > 1) { %>
-                            <div class="carousel-dots">
-                                <% venues.forEach(function(v, i) { %>
-                                    <button type="button" class="carousel-dot <%= i === 0 ? 'active' : '' %>" data-index="<%= i %>" aria-label="看第 <%= i + 1 %> 張：<%= v.name %>"></button>
-                                <% }); %>
-                            </div>
-                        <% } %>
-                    </div>
-                </section>
-
             </div>
 
             <p class="credit-line">Icons: Uicons by <a href="https://www.flaticon.com/uicons" target="_blank" rel="noopener noreferrer">Flaticon</a></p>
@@ -503,7 +387,7 @@
     </main>
 
     <script>
-        // 幻燈片輪播（首頁主視覺與推薦場地共用）：
+        // 幻燈片輪播（首頁橫幅）：
         // 手指滑動、點圓點都可以；data-autoplay 設為毫秒就會自動換頁（0 為不自動）；滑鼠移入或碰觸時暫停
         (function () {
             var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
